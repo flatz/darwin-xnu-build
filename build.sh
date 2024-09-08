@@ -40,11 +40,13 @@ function error() {
 : ${BUILDKC:=0}
 : ${CODEQL:=0}
 : ${KC_FILTER:='com.apple.driver.SEPHibernation'}
+: ${KDK_DST_DIR:='/Library/Developer/KDKs'}
 
 WORK_DIR="$PWD"
 CACHE_DIR="${WORK_DIR}/.cache"
 BUILD_DIR="${WORK_DIR}/build"
 FAKEROOT_DIR="${WORK_DIR}/fakeroot"
+SOURCES_DIR="${WORK_DIR}/sources"
 DSTROOT="${FAKEROOT_DIR}"
 
 HAVE_WE_INSTALLED_HEADERS_YET="${FAKEROOT_DIR}/.xnu_headers_installed"
@@ -54,14 +56,16 @@ KC_VARIANT=$(echo "$KERNEL_CONFIG" | tr '[:upper:]' '[:lower:]')
 KERNEL_TYPE="${KC_VARIANT}.$(echo "$MACHINE_CONFIG" | tr '[:upper:]' '[:lower:]')"
 
 help() {
-    echo 'Usage: build.sh [-h] [--clean] [--kc]
+    echo 'Usage: build.sh [-h] [--clean] [--clean-partial] [--kc] [--kdk-dirs <dir>]
 
 This script builds the macOS XNU kernel
 
 Where:
     -h|--help       show this help text
     -c|--clean      cleans build artifacts and cloned repos
+    --clean-partial cleans build artifacts
     -k|--kc         create kernel collection (via kmutil create)
+    --kdk-dirs      override default KDK installation location
 '
     exit 0
 }
@@ -94,6 +98,27 @@ clean() {
     fi
 }
 
+clean_partial() {
+    running "Cleaning build directories..."
+    declare -a paths_to_delete=(
+        "${BUILD_DIR}"
+        "${FAKEROOT_DIR}"
+    )
+
+    for path in "${paths_to_delete[@]}"; do
+        info "Will delete ${path}"
+    done
+
+    read -p "Are you sure? " -n 1 -r
+    echo # (optional) move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        for path in "${paths_to_delete[@]}"; do
+            info "Deleting ${path}"
+            rm -rf "${path}"
+        done
+    fi
+}
+
 install_deps() {
     if [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v gum)" ] || [ ! -x "$(command -v xcodes)" ] || [ ! -x "$(command -v cmake)" ] || [ ! -x "$(command -v ninja)" ]; then
         running "Installing dependencies"
@@ -108,7 +133,7 @@ install_deps() {
                 exit 1
             fi
         fi
-        brew install jq gum xcodes bash cmake ninja
+        brew install jq gum xcodes bash cmake ninja pbzx aria2
     fi
     if compgen -G "/Applications/Xcode*.app" >/dev/null; then
         info "Xcode is already installed: $(xcode-select -p)"
@@ -134,90 +159,97 @@ choose_xnu() {
         gum style --border normal --margin "1" --padding "1 2" --border-foreground 212 "Choose $(gum style --foreground 212 'macOS') version to build:"
         MACOS_VERSION=$(gum choose "12.5" "13.0" "13.1" "13.2" "13.3" "13.4" "13.5" "14.0" "14.1" "14.2" "14.3" "14.4" "14.5" "14.6")
     fi
+    info "MacOS version: ${MACOS_VERSION}"
+
+    BUILD_SUFFIX="${ARCH_CONFIG,,}_${MACHINE_CONFIG,,}_${KERNEL_CONFIG,,}_${MACOS_VERSION//./_}"
+    BUILD_DIR="${BUILD_DIR}_${BUILD_SUFFIX}"
+    info "Build directory: ${BUILD_DIR}"
+
     TIGHTBEAMC="tightbeamc-not-supported"
+
     case ${MACOS_VERSION} in
     '12.5')
          RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-125/release.json'
          KDK_NAME='Kernel Debug Kit 12.5 build 21G72'
-         KDKROOT='/Library/Developer/KDKs/KDK_12.5_21G72.kdk'
+         KDK_FOLDER_NAME='KDK_12.5_21G72.kdk'
          RC_DARWIN_KERNEL_VERSION='22.6.0'
          ;;
     '13.0')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-130/release.json'
         KDK_NAME='Kernel Debug Kit 13.0 build 22A380'
-        KDKROOT='/Library/Developer/KDKs/KDK_13.0_22A380.kdk'
+        KDK_FOLDER_NAME='KDK_13.0_22A380.kdk'
         RC_DARWIN_KERNEL_VERSION='22.1.0'
         ;;
     '13.1')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-131/release.json'
         KDK_NAME='Kernel Debug Kit 13.1 build 22C65'
-        KDKROOT='/Library/Developer/KDKs/KDK_13.1_22C65.kdk'
+        KDK_FOLDER_NAME='KDK_13.1_22C65.kdk'
         RC_DARWIN_KERNEL_VERSION='22.2.0'
         ;;
     '13.2')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-132/release.json'
         KDK_NAME='Kernel Debug Kit 13.2 build 22D49'
-        KDKROOT='/Library/Developer/KDKs/KDK_13.2_22D49.kdk'
+        KDK_FOLDER_NAME='KDK_13.2_22D49.kdk'
         RC_DARWIN_KERNEL_VERSION='22.3.0'
         ;;
     '13.3')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-133/release.json'
         KDK_NAME='Kernel Debug Kit 13.3 build 22E252'
-        KDKROOT='/Library/Developer/KDKs/KDK_13.3_22E252.kdk'
+        KDK_FOLDER_NAME='KDK_13.3_22E252.kdk'
         RC_DARWIN_KERNEL_VERSION='22.4.0'
         ;;
     '13.4')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-134/release.json'
         KDK_NAME='Kernel Debug Kit 13.4 build 22F66'
-        KDKROOT='/Library/Developer/KDKs/KDK_13.4_22F66.kdk'
+        KDK_FOLDER_NAME='KDK_13.4_22F66.kdk'
         RC_DARWIN_KERNEL_VERSION='22.5.0'
         ;;
     '13.5')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-135/release.json'
         KDK_NAME='Kernel Debug Kit 13.5 build 22G74'
-        KDKROOT='/Library/Developer/KDKs/KDK_13.5_22G74.kdk'
+        KDK_FOLDER_NAME='KDK_13.5_22G74.kdk'
         RC_DARWIN_KERNEL_VERSION='22.6.0'
         ;;
     '14.0')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-140/release.json'
         KDK_NAME='Kernel Debug Kit 14.0 build 23A344'
-        KDKROOT='/Library/Developer/KDKs/KDK_14.0_23A344.kdk'
+        KDK_FOLDER_NAME='KDK_14.0_23A344.kdk'
         RC_DARWIN_KERNEL_VERSION='23.0.0'
         ;;
     '14.1')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-141/release.json'
         KDK_NAME='Kernel Debug Kit 14.1 build 23B74'
-        KDKROOT='/Library/Developer/KDKs/KDK_14.1_23B74.kdk'
+        KDK_FOLDER_NAME='KDK_14.1_23B74.kdk'
         RC_DARWIN_KERNEL_VERSION='23.1.0'
         ;;
     '14.2')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-142/release.json'
         KDK_NAME='Kernel Debug Kit 14.2 build 23C64'
-        KDKROOT='/Library/Developer/KDKs/KDK_14.2_23C64.kdk'
+        KDK_FOLDER_NAME='KDK_14.2_23C64.kdk'
         RC_DARWIN_KERNEL_VERSION='23.2.0'
         ;;
     '14.3')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-143/release.json'
         KDK_NAME='Kernel Debug Kit 14.3 build 23D56'
-        KDKROOT='/Library/Developer/KDKs/KDK_14.3_23D56.kdk'
+        KDK_FOLDER_NAME='KDK_14.3_23D56.kdk'
         RC_DARWIN_KERNEL_VERSION='23.3.0'
         ;;
     '14.4')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-144/release.json'
         KDK_NAME='Kernel Debug Kit 14.4 build 23E214'
-        KDKROOT='/Library/Developer/KDKs/KDK_14.4_23E214.kdk'
+        KDK_FOLDER_NAME='KDK_14.4_23E214.kdk'
         RC_DARWIN_KERNEL_VERSION='23.4.0'
         ;;
     '14.5')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-145/release.json'
         KDK_NAME='Kernel Debug Kit 14.5 build 23F79'
-        KDKROOT='/Library/Developer/KDKs/KDK_14.5_23F79.kdk'
+        KDK_FOLDER_NAME='KDK_14.5_23F79.kdk'
         RC_DARWIN_KERNEL_VERSION='23.5.0'
         ;;
     '14.6')
         RELEASE_URL='https://raw.githubusercontent.com/apple-oss-distributions/distribution-macOS/macos-146/release.json'
         KDK_NAME='Kernel Debug Kit 14.6 build 23G80'
-        KDKROOT='/Library/Developer/KDKs/KDK_14.6_23G80.kdk'
+        KDK_FOLDER_NAME='KDK_14.6_23G80.kdk'
         RC_DARWIN_KERNEL_VERSION='23.6.0'
         ;;
     *)
@@ -225,20 +257,51 @@ choose_xnu() {
         exit 1
         ;;
     esac
+    KDK_FOLDER_NAME="${KDK_FOLDER_NAME//KDK_/}"
+    KDK_FOLDER_NAME="${KDK_FOLDER_NAME//.kdk/}"
+    KDKROOT="${KDK_DST_DIR}/${KDK_FOLDER_NAME}"
+    if [ "${KDKROOT:0:9}" == "/Library/" ]; then
+        KDK_TMP_DIR=/tmp
+    else
+        KDK_TMP_DIR="${KDK_DST_DIR}"
+    fi
+    KDK_FILE_NAME="${KDK_NAME// /_}.dmg"
+    KDK_DMG_PATH="${KDK_TMP_DIR}/${KDK_FILE_NAME}"
+    KDK_MOUNT_PATH="/tmp/${KDK_FOLDER_NAME}"
     info "Building XNU for macOS ${MACOS_VERSION}"
+    info "KDK root directory: ${KDKROOT}"
+    info "KDK .dmg path: ${KDK_DMG_PATH}"
     if [ ! -d "$KDKROOT" ]; then
-        KDK_URL=$(curl -s "https://raw.githubusercontent.com/dortania/KdkSupportPkg/gh-pages/manifest.json" | jq -r --arg KDK_NAME "$KDK_NAME" '.[] | select(.name==$KDK_NAME) | .url')
-        running "Downloading '$KDK_NAME' to /tmp"
-        curl --progress-bar --max-time 900 --connect-timeout 60 -L -o /tmp/KDK.dmg "${KDK_URL}"
-        running "Installing KDK"
-        hdiutil attach /tmp/KDK.dmg
-        if [ ! -d " /Library/Developer/KDKs" ]; then
-            sudo mkdir -p /Library/Developer/KDKs
-            sudo chmod 755 /Library/Developer/KDKs
+        if [ ! -f "$KDK_DMG_PATH" ]; then
+            KDK_URL=$(curl -s "https://raw.githubusercontent.com/dortania/KdkSupportPkg/gh-pages/manifest.json" | jq -r --arg KDK_NAME "$KDK_NAME" '.[] | select(.name==$KDK_NAME) | .url')
+            running "Downloading ${KDK_NAME} to ${KDK_DMG_PATH}"
+            #curl --progress-bar --max-time 900 --connect-timeout 60 -L -o "${KDK_DMG_PATH}" "${KDK_URL}"
+            aria2c -c -x 4 -t 60 -m 0 --retry-wait=3 --allow-overwrite=true --always-resume=true --auto-file-renaming=false -d "${KDK_TMP_DIR}" -o "${KDK_FILE_NAME}" "${KDK_URL}"
         fi
-        sudo installer -pkg '/Volumes/Kernel Debug Kit/KernelDebugKit.pkg' -target /
-        hdiutil detach '/Volumes/Kernel Debug Kit'
-        ls -lah /Library/Developer/KDKs
+        running "Installing KDK from ${KDK_DMG_PATH}"
+        mkdir -p "${KDK_MOUNT_PATH}"
+        hdiutil attach -readonly -mountpoint "${KDK_MOUNT_PATH}" "${KDK_DMG_PATH}"
+        if [ ! -d "${KDKROOT}" ]; then
+            if [ "${KDKROOT:0:9}" == "/Library/" ]; then
+                sudo mkdir -p "${KDKROOT}"
+                sudo chmod 755 "${KDKROOT}"
+            else
+                mkdir -p "${KDKROOT}"
+                chmod 755 "${KDKROOT}"
+            fi
+        fi
+        if [ "${KDKROOT:0:9}" == "/Library/" ]; then
+            sudo installer -pkg '/Volumes/Kernel Debug Kit/KernelDebugKit.pkg' -target /
+        else
+            cd "${KDKROOT}"
+            xar -f "${KDK_MOUNT_PATH}/KernelDebugKit.pkg" -x
+            pbzx -n 'KDK.pkg/Payload' | cpio -i
+            rm -rf 'Distribution' 'Resources' 'KDK.pkg'
+            cd "${WORK_DIR}"
+        fi
+        hdiutil detach "${KDK_MOUNT_PATH}"
+        rmdir "${KDK_MOUNT_PATH}"
+        ls -lah "${KDK_DST_DIR}"
     fi
 }
 
@@ -252,11 +315,25 @@ venv() {
 }
 
 get_xnu() {
-    if [ ! -d "${WORK_DIR}/xnu" ]; then
-        running "⬇️ Cloning xnu"
-        XNU_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="xnu") | .tag')
-        git clone --branch "${XNU_VERSION}" https://github.com/apple-oss-distributions/xnu.git "${WORK_DIR}/xnu"
+    mkdir -p "${SOURCES_DIR}"
+    running "💾 Getting xnu files"
+    if [ -e "${WORK_DIR}/xnu" ]; then
+        if [ ! -L "${WORK_DIR}/xnu" ]; then
+            error "${WORK_DIR}/xnu should be a symbolic link"
+            exit 1
+        fi
+        rm "${WORK_DIR}/xnu"
     fi
+    XNU_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="xnu") | .tag')
+    XNU_DIR="${SOURCES_DIR}/${XNU_VERSION}"
+    info "XNU version: ${XNU_VERSION}"
+    info "XNU directory: ${XNU_DIR}"
+    if [ ! -d "${XNU_DIR}" ]; then
+        running "⬇️ Cloning xnu"
+        git clone --branch "${XNU_VERSION}" https://github.com/apple-oss-distributions/xnu.git "${XNU_DIR}"
+    fi
+    ln -s "${XNU_DIR}" "${WORK_DIR}/xnu"
+
     if [ -f "${CACHE_DIR}/${MACOS_VERSION}/compile_commands.json" ]; then
         info "Restoring cached ${CACHE_DIR}/${MACOS_VERSION}/compile_commands.json"
         cp -f "${CACHE_DIR}/${MACOS_VERSION}/compile_commands.json" "${WORK_DIR}/xnu"
@@ -305,10 +382,21 @@ build_bootstrap_cmds() {
     if [ ! "$(find "${FAKEROOT_DIR}" -name 'mig' | wc -l)" -gt 0 ]; then
         running "📦 Building bootstrap_cmds"
 
-        if [ ! -d "${WORK_DIR}/bootstrap_cmds" ]; then
-            BOOTSTRAP_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="bootstrap_cmds") | .tag')
-            git clone --branch "${BOOTSTRAP_VERSION}" https://github.com/apple-oss-distributions/bootstrap_cmds.git "${WORK_DIR}/bootstrap_cmds"
+        if [ -e "${WORK_DIR}/bootstrap_cmds" ]; then
+            if [ ! -L "${WORK_DIR}/bootstrap_cmds" ]; then
+                error "${WORK_DIR}/bootstrap_cmds should be a symbolic link"
+                exit 1
+            fi
+            rm "${WORK_DIR}/bootstrap_cmds"
         fi
+        BOOTSTRAP_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="bootstrap_cmds") | .tag')
+        BOOTSTRAP_CMDS_DIR="${SOURCES_DIR}/${BOOTSTRAP_VERSION}"
+        info "bootstrap_cmds version: ${BOOTSTRAP_VERSION}"
+        info "bootstrap_cmds directory: ${BOOTSTRAP_CMDS_DIR}"
+        if [ ! -d "${BOOTSTRAP_CMDS_DIR}" ]; then
+            git clone --branch "${BOOTSTRAP_VERSION}" https://github.com/apple-oss-distributions/bootstrap_cmds.git "${BOOTSTRAP_CMDS_DIR}"
+        fi
+        ln -s "${BOOTSTRAP_CMDS_DIR}" "${WORK_DIR}/bootstrap_cmds"
 
         SRCROOT="${WORK_DIR}/bootstrap_cmds"
         OBJROOT="${BUILD_DIR}/bootstrap_cmds.obj"
@@ -327,13 +415,27 @@ build_bootstrap_cmds() {
 build_dtrace() {
     if [ ! "$(find "${FAKEROOT_DIR}" -name 'ctfmerge' | wc -l)" -gt 0 ]; then
         running "📦 Building dtrace"
-        if [ ! -d "${WORK_DIR}/dtrace" ]; then
-            DTRACE_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="dtrace") | .tag')
-            git clone --branch "${DTRACE_VERSION}" https://github.com/apple-oss-distributions/dtrace.git "${WORK_DIR}/dtrace"
+
+       if [ -e "${WORK_DIR}/dtrace" ]; then
+            if [ ! -L "${WORK_DIR}/dtrace" ]; then
+                error "${WORK_DIR}/dtrace should be a symbolic link"
+                exit 1
+            fi
+            rm "${WORK_DIR}/dtrace"
         fi
+        DTRACE_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="dtrace") | .tag')
+        DTRACE_DIR="${SOURCES_DIR}/${DTRACE_VERSION}"
+        info "dtrace version: ${DTRACE_VERSION}"
+        info "dtrace directory: ${DTRACE_DIR}"
+        if [ ! -d "${DTRACE_DIR}" ]; then
+            git clone --branch "${DTRACE_VERSION}" https://github.com/apple-oss-distributions/dtrace.git "${DTRACE_DIR}"
+        fi
+        ln -s "${DTRACE_DIR}" "${WORK_DIR}/dtrace"
+
         SRCROOT="${WORK_DIR}/dtrace"
         OBJROOT="${BUILD_DIR}/dtrace.obj"
         SYMROOT="${BUILD_DIR}/dtrace.sym"
+
         cd "${SRCROOT}"
         xcodebuild install -sdk macosx -target ctfconvert -target ctfdump -target ctfmerge ARCHS="arm64 x86_64" CODE_SIGN_IDENTITY="-" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}"
         cd "${WORK_DIR}"
@@ -343,13 +445,27 @@ build_dtrace() {
 build_availabilityversions() {
     if [ ! "$(find "${FAKEROOT_DIR}" -name 'availability.pl' | wc -l)" -gt 0 ]; then
         running "📦 Building AvailabilityVersions"
-        if [ ! -d "${WORK_DIR}/AvailabilityVersions" ]; then
-            AVAILABILITYVERSIONS_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="AvailabilityVersions") | .tag')
-            git clone --branch "${AVAILABILITYVERSIONS_VERSION}" https://github.com/apple-oss-distributions/AvailabilityVersions.git "${WORK_DIR}/AvailabilityVersions"
+
+       if [ -e "${WORK_DIR}/AvailabilityVersions" ]; then
+            if [ ! -L "${WORK_DIR}/AvailabilityVersions" ]; then
+                error "${WORK_DIR}/AvailabilityVersions should be a symbolic link"
+                exit 1
+            fi
+            rm "${WORK_DIR}/AvailabilityVersions"
         fi
+        AVAILABILITYVERSIONS_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="AvailabilityVersions") | .tag')
+        AVAILABILITYVERSIONS_DIR="${SOURCES_DIR}/${AVAILABILITYVERSIONS_VERSION}"
+        info "AvailabilityVersions version: ${AVAILABILITYVERSIONS_VERSION}"
+        info "AvailabilityVersions directory: ${AVAILABILITYVERSIONS_DIR}"
+        if [ ! -d "${AVAILABILITYVERSIONS_DIR}" ]; then
+            git clone --branch "${AVAILABILITYVERSIONS_VERSION}" https://github.com/apple-oss-distributions/AvailabilityVersions.git "${AVAILABILITYVERSIONS_DIR}"
+        fi
+        ln -s "${AVAILABILITYVERSIONS_DIR}" "${WORK_DIR}/AvailabilityVersions"
+
         SRCROOT="${WORK_DIR}/AvailabilityVersions"
         OBJROOT="${BUILD_DIR}/"
         SYMROOT="${BUILD_DIR}/"
+
         cd "${SRCROOT}"
         make install -j8 OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}"
         cd "${WORK_DIR}"
@@ -359,9 +475,11 @@ build_availabilityversions() {
 xnu_headers() {
     if [ ! -f "${HAVE_WE_INSTALLED_HEADERS_YET}" ]; then
         running "Installing xnu headers"
+
         SRCROOT="${WORK_DIR}/xnu"
         OBJROOT="${BUILD_DIR}/xnu-hdrs.obj"
         SYMROOT="${BUILD_DIR}/xnu-hdrs.sym"
+
         cd "${SRCROOT}"
         make installhdrs SDKROOT=macosx ARCH_CONFIGS="X86_64 ARM64" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}" KDKROOT="${KDKROOT}" TIGHTBEAMC=${TIGHTBEAMC} RC_DARWIN_KERNEL_VERSION=${RC_DARWIN_KERNEL_VERSION}
         cd "${WORK_DIR}"
@@ -372,14 +490,29 @@ xnu_headers() {
 libsystem_headers() {
     if [ ! -d "${FAKEROOT_DIR}/System/Library/Frameworks/System.framework" ]; then
         running "Installing Libsystem headers"
-        if [ ! -d "${WORK_DIR}/Libsystem" ]; then
-            LIBSYSTEM_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="Libsystem") | .tag')
-            git clone --branch "${LIBSYSTEM_VERSION}" https://github.com/apple-oss-distributions/Libsystem.git "${WORK_DIR}/Libsystem"
+
+       if [ -e "${WORK_DIR}/Libsystem" ]; then
+            if [ ! -L "${WORK_DIR}/Libsystem" ]; then
+                error "${WORK_DIR}/Libsystem should be a symbolic link"
+                exit 1
+            fi
+            rm "${WORK_DIR}/Libsystem"
         fi
+        LIBSYSTEM_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="Libsystem") | .tag')
+        LIBSYSTEM_DIR="${SOURCES_DIR}/${LIBSYSTEM_VERSION}"
+        info "Libsystem version: ${LIBSYSTEM_VERSION}"
+        info "Libsystem directory: ${LIBSYSTEM_DIR}"
+        if [ ! -d "${LIBSYSTEM_DIR}" ]; then
+            git clone --branch "${LIBSYSTEM_VERSION}" https://github.com/apple-oss-distributions/Libsystem.git "${LIBSYSTEM_DIR}"
+        fi
+        ln -s "${LIBSYSTEM_DIR}" "${WORK_DIR}/Libsystem"
+
         sed -i '' 's|^#include.*BSD.xcconfig.*||g' "${WORK_DIR}/Libsystem/Libsystem.xcconfig"
+
         SRCROOT="${WORK_DIR}/Libsystem"
         OBJROOT="${BUILD_DIR}/Libsystem.obj"
         SYMROOT="${BUILD_DIR}/Libsystem.sym"
+
         cd "${SRCROOT}"
         xcodebuild installhdrs -sdk macosx ARCHS="arm64 arm64e" VALID_ARCHS="arm64 arm64e" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}"
         cd "${WORK_DIR}"
@@ -389,9 +522,11 @@ libsystem_headers() {
 libsyscall_headers() {
     if [ ! -f "${FAKEROOT_DIR}/usr/include/os/proc.h" ]; then
         running "Installing libsyscall headers"
+
         SRCROOT="${WORK_DIR}/xnu/libsyscall"
         OBJROOT="${BUILD_DIR}/libsyscall.obj"
         SYMROOT="${BUILD_DIR}/libsyscall.sym"
+
         cd "${SRCROOT}"
         xcodebuild installhdrs -sdk macosx TARGET_CONFIGS="$KERNEL_CONFIG $ARCH_CONFIG $MACHINE_CONFIG" ARCHS="arm64 arm64e" VALID_ARCHS="arm64 arm64e" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}"
         cd "${WORK_DIR}"
@@ -401,11 +536,25 @@ libsyscall_headers() {
 build_libplatform() {
     if [ ! -f "${FAKEROOT_DIR}/usr/local/include/_simple.h" ]; then
         running "📦 Building libplatform"
-        if [ ! -d "${WORK_DIR}/libplatform" ]; then
-            LIBPLATFORM_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="libplatform") | .tag')
-            git clone --branch "${LIBPLATFORM_VERSION}" https://github.com/apple-oss-distributions/libplatform.git "${WORK_DIR}/libplatform"
+
+       if [ -e "${WORK_DIR}/libplatform" ]; then
+            if [ ! -L "${WORK_DIR}/libplatform" ]; then
+                error "${WORK_DIR}/libplatform should be a symbolic link"
+                exit 1
+            fi
+            rm "${WORK_DIR}/libplatform"
         fi
+        LIBPLATFORM_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="libplatform") | .tag')
+        LIBPLATFORM_DIR="${SOURCES_DIR}/${LIBPLATFORM_VERSION}"
+        info "libplatform version: ${LIBPLATFORM_VERSION}"
+        info "libplatform directory: ${LIBPLATFORM_DIR}"
+        if [ ! -d "${LIBPLATFORM_DIR}" ]; then
+            git clone --branch "${LIBPLATFORM_VERSION}" https://github.com/apple-oss-distributions/libplatform.git "${LIBPLATFORM_DIR}"
+        fi
+        ln -s "${LIBPLATFORM_DIR}" "${WORK_DIR}/libplatform"
+
         SRCROOT="${WORK_DIR}/libplatform"
+
         cd "${SRCROOT}"
         ditto "${SRCROOT}/include" "${DSTROOT}/usr/local/include"
         ditto "${SRCROOT}/private" "${DSTROOT}/usr/local/include"
@@ -416,19 +565,35 @@ build_libplatform() {
 build_libdispatch() {
     if [ ! -f "${FAKEROOT_DIR}/usr/local/lib/kernel/libfirehose_kernel.a" ]; then
         running "📦 Building libdispatch"
-        if [ ! -d "${WORK_DIR}/libdispatch" ]; then
-            LIBDISPATCH_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="libdispatch") | .tag')
-            git clone --branch "${LIBDISPATCH_VERSION}" https://github.com/apple-oss-distributions/libdispatch.git "${WORK_DIR}/libdispatch"
+
+       if [ -e "${WORK_DIR}/libdispatch" ]; then
+            if [ ! -L "${WORK_DIR}/libdispatch" ]; then
+                error "${WORK_DIR}/libdispatch should be a symbolic link"
+                exit 1
+            fi
+            rm "${WORK_DIR}/libdispatch"
         fi
+        LIBDISPATCH_VERSION=$(curl -s $RELEASE_URL | jq -r '.projects[] | select(.project=="libdispatch") | .tag')
+        LIBDISPATCH_DIR="${SOURCES_DIR}/${LIBDISPATCH_VERSION}"
+        info "libdispatch version: ${LIBDISPATCH_VERSION}"
+        info "libdispatch directory: ${LIBDISPATCH_DIR}"
+        if [ ! -d "${LIBDISPATCH_DIR}" ]; then
+            git clone --branch "${LIBDISPATCH_VERSION}" https://github.com/apple-oss-distributions/libdispatch.git "${LIBDISPATCH_DIR}"
+        fi
+        ln -s "${LIBDISPATCH_DIR}" "${WORK_DIR}/libdispatch"
+
         SRCROOT="${WORK_DIR}/libdispatch"
         OBJROOT="${BUILD_DIR}/libfirehose_kernel.obj"
         SYMROOT="${BUILD_DIR}/libfirehose_kernel.sym"
+
         # libfirehose_kernel patch
         sed -i '' 's|$(SDKROOT)/System/Library/Frameworks/Kernel.framework/PrivateHeaders|$(FAKEROOT_DIR)/System/Library/Frameworks/Kernel.framework/PrivateHeaders|g' "${SRCROOT}/xcodeconfig/libfirehose_kernel.xcconfig"
         sed -i '' 's|$(SDKROOT)/usr/local/include|$(FAKEROOT_DIR)/usr/local/include|g' "${SRCROOT}/xcodeconfig/libfirehose_kernel.xcconfig"
+
         cd "${SRCROOT}"
         xcodebuild install -target libfirehose_kernel -sdk macosx ARCHS="x86_64 arm64e" VALID_ARCHS="x86_64 arm64e" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}"
         cd "${WORK_DIR}"
+
         mv "${FAKEROOT_DIR}/usr/local/lib/kernel/liblibfirehose_kernel.a" "${FAKEROOT_DIR}/usr/local/lib/kernel/libfirehose_kernel.a"
     fi
 }
@@ -515,12 +680,23 @@ main() {
         -h | --help)
             help
             ;;
+        --clean-partial)
+            clean_partial
+            shift
+            exit 0
+            ;;
         -c | --clean)
             clean
             shift
+            exit 0
             ;;
         -k | --kc)
             BUILDKC=1
+            shift
+            ;;
+        --kdk-dirs)
+            KDK_DST_DIR="$2"
+            shift
             shift
             ;;
         *)
@@ -528,24 +704,42 @@ main() {
             ;;
         esac
     done
+    echo "Installing dependencies" >> log.txt
     install_deps
+    echo "Choosing XNU release" >> log.txt
     choose_xnu
+    echo "Getting XNU sources" >> log.txt
     get_xnu
+    echo "Applying patches" >> log.txt
     patches
+    echo "Setting up virtual environment" >> log.txt
     venv
+    echo "Building bootstrap commands" >> log.txt
     build_bootstrap_cmds
+    echo "Building DTrace" >> log.txt
     build_dtrace
+    echo "Building availablity versions" >> log.txt
     build_availabilityversions
+    echo "Making XNU headers" >> log.txt
     xnu_headers
+    echo "Making libsystem headers" >> log.txt
     libsystem_headers
+    echo "Making libsyscalls headers" >> log.txt
     libsyscall_headers
+    echo "Building libplatform" >> log.txt
     build_libplatform
+    echo "Building libdispatch" >> log.txt
     build_libdispatch
+    echo "Building XNU" >> log.txt
     build_xnu
+    echo "Done" >> log.txt
     echo "  🎉 XNU Build Done!"
     if [ "$BUILDKC" -ne "0" ]; then
+        echo "Installing IPSW" >> log.txt
         install_ipsw
+        echo "Building kernelcache" >> log.txt
         build_kc
+        echo "Done" >> log.txt
     fi
 }
 
