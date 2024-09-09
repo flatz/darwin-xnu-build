@@ -1,0 +1,2543 @@
+diff --git a/osfmk/arm/Makefile b/osfmk/arm/Makefile
+index 7900cccf..d1103d3d 100644
+--- a/osfmk/arm/Makefile
++++ b/osfmk/arm/Makefile
+@@ -17,6 +17,7 @@ ARM_HEADER_FILES =	\
+ 		lock.h \
+ 		locks.h \
+ 		machine_cpuid.h \
++		machine_extra_regs.h \
+ 		machine_routines.h \
+ 		memory_types.h \
+ 		pal_routines.h \
+diff --git a/osfmk/arm/machine_extra_regs.h b/osfmk/arm/machine_extra_regs.h
+new file mode 100644
+index 00000000..02d63e9f
+--- /dev/null
++++ b/osfmk/arm/machine_extra_regs.h
+@@ -0,0 +1,4 @@
++#ifndef _MACHINE_ARM_EXTRA_REGS_H
++#define _MACHINE_ARM_EXTRA_REGS_H
++
++#endif /* _MACHINE_ARM_EXTRA_REGS_H */
+diff --git a/osfmk/arm64/Makefile b/osfmk/arm64/Makefile
+index e015003b..5a60b53e 100644
+--- a/osfmk/arm64/Makefile
++++ b/osfmk/arm64/Makefile
+@@ -12,6 +12,7 @@ EXPINC_SUBDIRS_ARM64 += \
+ 
+ ARM_HEADER_FILES = \
+ 	machine_cpuid.h		\
++	machine_extra_regs.h \
+ 	machine_machdep.h	\
+ 
+ # Headers installed into Kernel.framework/Headers (public and internal SDKs).
+@@ -39,6 +40,7 @@ EXPORT_MD_LIST = \
+ 	hv_hvc.h \
+ 	lowglobals.h \
+ 	machine_cpuid.h \
++	machine_extra_regs.h \
+ 	machine_kpc.h \
+ 	machine_remote_time.h \
+ 	monotonic.h \
+diff --git a/osfmk/arm64/kpc.c b/osfmk/arm64/kpc.c
+index e73c7d0d..41f92e3f 100644
+--- a/osfmk/arm64/kpc.c
++++ b/osfmk/arm64/kpc.c
+@@ -35,6 +35,7 @@
+ #include <kern/monotonic.h>
+ #include <mach/mach_types.h>
+ #include <machine/machine_routines.h>
++#include <machine/machine_extra_regs.h>
+ #include <kern/cpc.h>
+ #include <stdint.h>
+ #include <sys/errno.h>
+@@ -207,26 +208,26 @@ static void
+ dump_regs(void)
+ {
+ 	uint64_t val;
+-	kprintf("PMCR0 = 0x%" PRIx64 "\n", SREG_READ("PMCR0_EL1"));
+-	kprintf("PMCR1 = 0x%" PRIx64 "\n", SREG_READ("PMCR1_EL1"));
+-	kprintf("PMCR2 = 0x%" PRIx64 "\n", SREG_READ("PMCR2_EL1"));
+-	kprintf("PMCR3 = 0x%" PRIx64 "\n", SREG_READ("PMCR3_EL1"));
+-	kprintf("PMCR4 = 0x%" PRIx64 "\n", SREG_READ("PMCR4_EL1"));
+-	kprintf("PMESR0 = 0x%" PRIx64 "\n", SREG_READ("PMESR0_EL1"));
+-	kprintf("PMESR1 = 0x%" PRIx64 "\n", SREG_READ("PMESR1_EL1"));
+-
+-	kprintf("PMC0 = 0x%" PRIx64 "\n", SREG_READ("PMC0"));
+-	kprintf("PMC1 = 0x%" PRIx64 "\n", SREG_READ("PMC1"));
+-	kprintf("PMC2 = 0x%" PRIx64 "\n", SREG_READ("PMC2"));
+-	kprintf("PMC3 = 0x%" PRIx64 "\n", SREG_READ("PMC3"));
+-	kprintf("PMC4 = 0x%" PRIx64 "\n", SREG_READ("PMC4"));
+-	kprintf("PMC5 = 0x%" PRIx64 "\n", SREG_READ("PMC5"));
+-	kprintf("PMC6 = 0x%" PRIx64 "\n", SREG_READ("PMC6"));
+-	kprintf("PMC7 = 0x%" PRIx64 "\n", SREG_READ("PMC7"));
++	kprintf("PMCR0 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMCR0_EL1)));
++	kprintf("PMCR1 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMCR1_EL1)));
++	kprintf("PMCR2 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMCR2_EL1)));
++	kprintf("PMCR3 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMCR3_EL1)));
++	kprintf("PMCR4 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMCR4_EL1)));
++	kprintf("PMESR0 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMESR0_EL1)));
++	kprintf("PMESR1 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMESR1_EL1)));
++
++	kprintf("PMC0 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMC0)));
++	kprintf("PMC1 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMC1)));
++	kprintf("PMC2 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMC2)));
++	kprintf("PMC3 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMC3)));
++	kprintf("PMC4 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMC4)));
++	kprintf("PMC5 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMC5)));
++	kprintf("PMC6 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMC6)));
++	kprintf("PMC7 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMC7)));
+ 
+ #if (KPC_ARM64_CONFIGURABLE_COUNT > 6)
+-	kprintf("PMC8 = 0x%" PRIx64 "\n", SREG_READ("PMC8"));
+-	kprintf("PMC9 = 0x%" PRIx64 "\n", SREG_READ("PMC9"));
++	kprintf("PMC8 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMC8)));
++	kprintf("PMC9 = 0x%" PRIx64 "\n", SREG_READ(ASR_REG(PMC9)));
+ #endif
+ }
+ #endif
+@@ -237,7 +238,7 @@ enable_counter(uint32_t counter)
+ 	uint64_t pmcr0 = 0;
+ 	boolean_t counter_running, pmi_enabled, enabled;
+ 
+-	pmcr0 = SREG_READ("PMCR0_EL1") | 0x3 /* leave the fixed counters enabled for monotonic */;
++	pmcr0 = SREG_READ(ASR_REG(PMCR0_EL1)) | 0x3 /* leave the fixed counters enabled for monotonic */;
+ 
+ 	counter_running = (pmcr0 & PMCR0_PMC_ENABLE_MASK(counter)) != 0;
+ 	pmi_enabled = (pmcr0 & PMCR0_PMI_ENABLE_MASK(counter)) != 0;
+@@ -247,7 +248,7 @@ enable_counter(uint32_t counter)
+ 	if (!enabled) {
+ 		pmcr0 |= PMCR0_PMC_ENABLE_MASK(counter);
+ 		pmcr0 |= PMCR0_PMI_ENABLE_MASK(counter);
+-		SREG_WRITE("PMCR0_EL1", pmcr0);
++		SREG_WRITE(ASR_REG(PMCR0_EL1), pmcr0);
+ 	}
+ 
+ 	return enabled;
+@@ -263,12 +264,12 @@ disable_counter(uint32_t counter)
+ 		return true;
+ 	}
+ 
+-	pmcr0 = SREG_READ("PMCR0_EL1") | 0x3;
++	pmcr0 = SREG_READ(ASR_REG(PMCR0_EL1)) | 0x3;
+ 	enabled = (pmcr0 & PMCR0_PMC_ENABLE_MASK(counter)) != 0;
+ 
+ 	if (enabled) {
+ 		pmcr0 &= PMCR0_PMC_DISABLE_MASK(counter);
+-		SREG_WRITE("PMCR0_EL1", pmcr0);
++		SREG_WRITE(ASR_REG(PMCR0_EL1), pmcr0);
+ 	}
+ 
+ 	return enabled;
+@@ -317,17 +318,17 @@ static uint64_t
+ read_counter(uint32_t counter)
+ {
+ 	switch (counter) {
+-	// case 0: return SREG_READ("PMC0");
+-	// case 1: return SREG_READ("PMC1");
+-	case 2: return SREG_READ("PMC2");
+-	case 3: return SREG_READ("PMC3");
+-	case 4: return SREG_READ("PMC4");
+-	case 5: return SREG_READ("PMC5");
+-	case 6: return SREG_READ("PMC6");
+-	case 7: return SREG_READ("PMC7");
++	// case 0: return SREG_READ(ASR_REG(PMC0));
++	// case 1: return SREG_READ(ASR_REG(PMC1));
++	case 2: return SREG_READ(ASR_REG(PMC2));
++	case 3: return SREG_READ(ASR_REG(PMC3));
++	case 4: return SREG_READ(ASR_REG(PMC4));
++	case 5: return SREG_READ(ASR_REG(PMC5));
++	case 6: return SREG_READ(ASR_REG(PMC6));
++	case 7: return SREG_READ(ASR_REG(PMC7));
+ #if KPC_ARM64_CONFIGURABLE_COUNT > 6
+-	case 8: return SREG_READ("PMC8");
+-	case 9: return SREG_READ("PMC9");
++	case 8: return SREG_READ(ASR_REG(PMC8));
++	case 9: return SREG_READ(ASR_REG(PMC9));
+ #endif // KPC_ARM64_CONFIGURABLE_COUNT > 6
+ 	default: return 0;
+ 	}
+@@ -337,15 +338,15 @@ static void
+ write_counter(uint32_t counter, uint64_t value)
+ {
+ 	switch (counter) {
+-	case 2: SREG_WRITE("PMC2", value); break;
+-	case 3: SREG_WRITE("PMC3", value); break;
+-	case 4: SREG_WRITE("PMC4", value); break;
+-	case 5: SREG_WRITE("PMC5", value); break;
+-	case 6: SREG_WRITE("PMC6", value); break;
+-	case 7: SREG_WRITE("PMC7", value); break;
++	case 2: SREG_WRITE(ASR_REG(PMC2), value); break;
++	case 3: SREG_WRITE(ASR_REG(PMC3), value); break;
++	case 4: SREG_WRITE(ASR_REG(PMC4), value); break;
++	case 5: SREG_WRITE(ASR_REG(PMC5), value); break;
++	case 6: SREG_WRITE(ASR_REG(PMC6), value); break;
++	case 7: SREG_WRITE(ASR_REG(PMC7), value); break;
+ #if KPC_ARM64_CONFIGURABLE_COUNT > 6
+-	case 8: SREG_WRITE("PMC8", value); break;
+-	case 9: SREG_WRITE("PMC9", value); break;
++	case 8: SREG_WRITE(ASR_REG(PMC8), value); break;
++	case 9: SREG_WRITE(ASR_REG(PMC9), value); break;
+ #endif // KPC_ARM64_CONFIGURABLE_COUNT > 6
+ 	default: break;
+ 	}
+@@ -360,18 +361,18 @@ kpc_rawpmu_config_count(void)
+ int
+ kpc_get_rawpmu_config(kpc_config_t *configv)
+ {
+-	configv[0] = SREG_READ("PMCR2_EL1");
+-	configv[1] = SREG_READ("PMCR3_EL1");
+-	configv[2] = SREG_READ("PMCR4_EL1");
+-	configv[3] = SREG_READ("OPMAT0_EL1");
+-	configv[4] = SREG_READ("OPMAT1_EL1");
+-	configv[5] = SREG_READ("OPMSK0_EL1");
+-	configv[6] = SREG_READ("OPMSK1_EL1");
++	configv[0] = SREG_READ(ASR_REG(PMCR2_EL1));
++	configv[1] = SREG_READ(ASR_REG(PMCR3_EL1));
++	configv[2] = SREG_READ(ASR_REG(PMCR4_EL1));
++	configv[3] = SREG_READ(ASR_REG(OPMAT0_EL1));
++	configv[4] = SREG_READ(ASR_REG(OPMAT1_EL1));
++	configv[5] = SREG_READ(ASR_REG(OPMSK0_EL1));
++	configv[6] = SREG_READ(ASR_REG(OPMSK1_EL1));
+ #if RAWPMU_CONFIG_COUNT > 7
+-	configv[7] = SREG_READ("PMMMAP_EL1");
+-	configv[8] = SREG_READ("PMTRHLD2_EL1");
+-	configv[9] = SREG_READ("PMTRHLD4_EL1");
+-	configv[10] = SREG_READ("PMTRHLD6_EL1");
++	configv[7] = SREG_READ(ASR_REG(PMMMAP_EL1));
++	configv[8] = SREG_READ(ASR_REG(PMTRHLD2_EL1));
++	configv[9] = SREG_READ(ASR_REG(PMTRHLD4_EL1));
++	configv[10] = SREG_READ(ASR_REG(PMTRHLD6_EL1));
+ #endif
+ 	return 0;
+ }
+@@ -390,26 +391,26 @@ save_regs(void)
+ static void
+ restore_control_regs(uint32_t classes)
+ {
+-	SREG_WRITE("PMCR1_EL1", saved_PMCR[1] | 0x30303);
++	SREG_WRITE(ASR_REG(PMCR1_EL1), saved_PMCR[1] | 0x30303);
+ #if CONFIG_EXCLAVES
+-	SREG_WRITE("PMCR1_EL12", saved_PMCR[1] | 0x30303);
++	SREG_WRITE(ASR_REG(PMCR1_EL12), saved_PMCR[1] | 0x30303);
+ #endif
+-	SREG_WRITE("PMESR0_EL1", saved_PMESR[0]);
+-	SREG_WRITE("PMESR1_EL1", saved_PMESR[1]);
++	SREG_WRITE(ASR_REG(PMESR0_EL1), saved_PMESR[0]);
++	SREG_WRITE(ASR_REG(PMESR1_EL1), saved_PMESR[1]);
+ 
+ 	if (classes & KPC_CLASS_RAWPMU_MASK) {
+-		SREG_WRITE("PMCR2_EL1", saved_RAWPMU[0]);
+-		SREG_WRITE("PMCR3_EL1", saved_RAWPMU[1]);
+-		SREG_WRITE("PMCR4_EL1", saved_RAWPMU[2]);
+-		SREG_WRITE("OPMAT0_EL1", saved_RAWPMU[3]);
+-		SREG_WRITE("OPMAT1_EL1", saved_RAWPMU[4]);
+-		SREG_WRITE("OPMSK0_EL1", saved_RAWPMU[5]);
+-		SREG_WRITE("OPMSK1_EL1", saved_RAWPMU[6]);
++		SREG_WRITE(ASR_REG(PMCR2_EL1), saved_RAWPMU[0]);
++		SREG_WRITE(ASR_REG(PMCR3_EL1), saved_RAWPMU[1]);
++		SREG_WRITE(ASR_REG(PMCR4_EL1), saved_RAWPMU[2]);
++		SREG_WRITE(ASR_REG(OPMAT0_EL1), saved_RAWPMU[3]);
++		SREG_WRITE(ASR_REG(OPMAT1_EL1), saved_RAWPMU[4]);
++		SREG_WRITE(ASR_REG(OPMSK0_EL1), saved_RAWPMU[5]);
++		SREG_WRITE(ASR_REG(OPMSK1_EL1), saved_RAWPMU[6]);
+ #if RAWPMU_CONFIG_COUNT > 7
+-		SREG_WRITE("PMMMAP_EL1", saved_RAWPMU[7]);
+-		SREG_WRITE("PMTRHLD2_EL1", saved_RAWPMU[8]);
+-		SREG_WRITE("PMTRHLD4_EL1", saved_RAWPMU[9]);
+-		SREG_WRITE("PMTRHLD6_EL1", saved_RAWPMU[10]);
++		SREG_WRITE(ASR_REG(PMMMAP_EL1), saved_RAWPMU[7]);
++		SREG_WRITE(ASR_REG(PMTRHLD2_EL1), saved_RAWPMU[8]);
++		SREG_WRITE(ASR_REG(PMTRHLD4_EL1), saved_RAWPMU[9]);
++		SREG_WRITE(ASR_REG(PMTRHLD6_EL1), saved_RAWPMU[10]);
+ #endif // RAWPMU_CONFIG_COUNT > 7
+ 	}
+ }
+@@ -434,7 +435,7 @@ get_counter_config(uint32_t counter)
+ 	case 3:
+ 	case 4:
+ 	case 5:
+-		pmesr = PMESR_EVT_DECODE(SREG_READ("PMESR0_EL1"), counter, 2);
++		pmesr = PMESR_EVT_DECODE(SREG_READ(ASR_REG(PMESR0_EL1)), counter, 2);
+ 		break;
+ 	case 6:
+ 	case 7:
+@@ -442,7 +443,7 @@ get_counter_config(uint32_t counter)
+ 	case 8:
+ 	case 9:
+ #endif // KPC_ARM64_CONFIGURABLE_COUNT > 6
+-		pmesr = PMESR_EVT_DECODE(SREG_READ("PMESR1_EL1"), counter, 6);
++		pmesr = PMESR_EVT_DECODE(SREG_READ(ASR_REG(PMESR1_EL1)), counter, 6);
+ 		break;
+ 	default:
+ 		pmesr = 0;
+@@ -451,7 +452,7 @@ get_counter_config(uint32_t counter)
+ 
+ 	kpc_config_t config = pmesr;
+ 
+-	uint64_t pmcr1 = SREG_READ("PMCR1_EL1");
++	uint64_t pmcr1 = SREG_READ(ASR_REG(PMCR1_EL1));
+ 
+ 	if (pmcr1 & PMCR1_EL0_A32_ENABLE_MASK(counter)) {
+ 		config |= CFGWORD_EL0A32EN_MASK;
+@@ -801,7 +802,7 @@ kpc_pmi_handler(unsigned int ctr)
+ 
+ #if HAS_CPMU_PC_CAPTURE
+ 	if (FIXED_ACTIONID(ctr) && PMC_SUPPORTS_PC_CAPTURE(ctr)) {
+-		uintptr_t pc_capture = SREG_READ("PM_PMI_PC");
++		uintptr_t pc_capture = SREG_READ(ASR_REG(PM_PMI_PC));
+ 		captured = PC_CAPTURE_PMC(pc_capture) == ctr;
+ 		if (captured) {
+ 			pc = PC_CAPTURE_PC(pc_capture);
+diff --git a/osfmk/arm64/machine_extra_regs.h b/osfmk/arm64/machine_extra_regs.h
+new file mode 100644
+index 00000000..9bb2d9a3
+--- /dev/null
++++ b/osfmk/arm64/machine_extra_regs.h
+@@ -0,0 +1,1873 @@
++
++#ifndef _MACHINE_ARM64_EXTRA_REGS_H
++#define _MACHINE_ARM64_EXTRA_REGS_H
++
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Wmacro-redefined"
++
++//
++// msr
++//
++
++#define MSR_NAME_TPIDR_EL1 tpidr_el1
++#define MSR_NAME_TTBR1_EL1 ttbr1_el1
++#define MSR_NAME_TTBR0_EL1 ttbr0_el1
++#define MSR_NAME_MPIDR_EL1 mpidr_el1
++#define MSR_NAME_CLIDR_EL1 clidr_el1
++#define MSR_NAME_CSSELR_EL1 csselr_el1
++#define MSR_NAME_SCTLR_EL1 sctlr_el1
++#define MSR_NAME_ACTLR_EL1 actlr_el1
++#define MSR_NAME_CPACR_EL1 cpacr_el1
++#define MSR_NAME_ZCR_EL1 zcr_el1
++#define MSR_NAME_TCR_EL1 tcr_el1
++#define MSR_NAME_TCL2_EL1 tcr2_el1
++#define MSR_NAME_ESL_EL1 esr_el1
++#define MSR_NAME_AFSR0_EL1 afsr0_el1
++#define MSR_NAME_AFSR1_EL1 afsr1_el1
++#define MSR_NAME_FAR_EL1 far_el1
++#define MSR_NAME_MAIR_EL1 mair_el1
++#define MSR_NAME_VBAR_EL1 vbar_el1
++#define MSR_NAME_CONTEXTIDR_EL1 contextidr_el1
++#define MSR_NAME_TPIDR_EL0 tpidr_el0
++#define MSR_NAME_IC_IALLUIS S1_0_c7_c1_0
++#define MSR_NAME_IC_IALLU S1_0_c7_c5_0
++#define MSR_NAME_DC_IVAC S1_0_c7_c6_1
++#define MSR_NAME_DC_ISW S1_0_c7_c6_2
++#define MSR_NAME_DC_IGVAC S1_0_c7_c6_3
++#define MSR_NAME_DC_IGSW S1_0_c7_c6_4
++#define MSR_NAME_DC_IGDVAC S1_0_c7_c6_5
++#define MSR_NAME_DC_IGDSW S1_0_c7_c6_6
++#define MSR_NAME_AT_S1E1R S1_0_c7_c8_0
++#define MSR_NAME_AT_S1E1W S1_0_c7_c8_1
++#define MSR_NAME_AT_S1E0R S1_0_c7_c8_2
++#define MSR_NAME_AT_S1E0W S1_0_c7_c8_3
++#define MSR_NAME_AT_S1E1RP S1_0_c7_c9_0
++#define MSR_NAME_AT_S1E1WP S1_0_c7_c9_1
++#define MSR_NAME_DC_CSW S1_0_c7_c10_2
++#define MSR_NAME_DC_CGSW S1_0_c7_c10_4
++#define MSR_NAME_DC_CGDSW S1_0_c7_c10_6
++#define MSR_NAME_DC_CISW S1_0_c7_c14_2
++#define MSR_NAME_DC_CIGSW S1_0_c7_c14_4
++#define MSR_NAME_DC_CIGDSW S1_0_c7_c14_6
++#define MSR_NAME_TLBI_VMALLE1OS S1_0_c8_c1_0
++#define MSR_NAME_TLBI_VAE1OS S1_0_c8_c1_1
++#define MSR_NAME_TLBI_ASIDE1OS S1_0_c8_c1_2
++#define MSR_NAME_TLBI_VAAE1OS S1_0_c8_c1_3
++#define MSR_NAME_TLBI_VALE1OS S1_0_c8_c1_5
++#define MSR_NAME_TLBI_VAALE1OS S1_0_c8_c1_7
++#define MSR_NAME_TLBI_RVAE1IS S1_0_c8_c2_1
++#define MSR_NAME_TLBI_RVAAE1IS S1_0_c8_c2_3
++#define MSR_NAME_TLBI_RVALE1IS S1_0_c8_c2_5
++#define MSR_NAME_TLBI_RVAALE1IS S1_0_c8_c2_7
++#define MSR_NAME_TLBI_VMALLE1IS S1_0_c8_c3_0
++#define MSR_NAME_TLBI_VAE1IS S1_0_c8_c3_1
++#define MSR_NAME_TLBI_ASIDE1IS S1_0_c8_c3_2
++#define MSR_NAME_TLBI_VAAE1IS S1_0_c8_c3_3
++#define MSR_NAME_TLBI_VALE1IS S1_0_c8_c3_5
++#define MSR_NAME_TLBI_VAALE1IS S1_0_c8_c3_7
++#define MSR_NAME_TLBI_RVAE1OS S1_0_c8_c5_1
++#define MSR_NAME_TLBI_RVAAE1OS S1_0_c8_c5_3
++#define MSR_NAME_TLBI_RVALE1OS S1_0_c8_c5_5
++#define MSR_NAME_TLBI_RVAALE1OS S1_0_c8_c5_7
++#define MSR_NAME_TLBI_RVAE1 S1_0_c8_c6_1
++#define MSR_NAME_TLBI_RVAAE1 S1_0_c8_c6_3
++#define MSR_NAME_TLBI_RVALE1 S1_0_c8_c6_5
++#define MSR_NAME_TLBI_RVAALE1 S1_0_c8_c6_7
++#define MSR_NAME_TLBI_VMALLE1 S1_0_c8_c7_0
++#define MSR_NAME_TLBI_VAE1 S1_0_c8_c7_1
++#define MSR_NAME_TLBI_ASIDE1 S1_0_c8_c7_2
++#define MSR_NAME_TLBI_VAAE1 S1_0_c8_c7_3
++#define MSR_NAME_TLBI_VALE1 S1_0_c8_c7_5
++#define MSR_NAME_TLBI_VAALE1 S1_0_c8_c7_7
++#define MSR_NAME_CFP_RCTX S1_3_c7_c3_4
++#define MSR_NAME_DVP_RCTX S1_3_c7_c3_5
++#define MSR_NAME_CPP_RCTX S1_3_c7_c3_7
++#define MSR_NAME_DC_ZVA S1_3_c7_c4_1
++#define MSR_NAME_DC_GVA S1_3_c7_c4_3
++#define MSR_NAME_DC_GZVA S1_3_c7_c4_4
++#define MSR_NAME_IC_IVAU S1_3_c7_c5_1
++#define MSR_NAME_DC_CVAC S1_3_c7_c10_1
++#define MSR_NAME_DC_CGVAC S1_3_c7_c10_3
++#define MSR_NAME_DC_CGDVAC S1_3_c7_c10_5
++#define MSR_NAME_DC_CVAU S1_3_c7_c11_1
++#define MSR_NAME_DC_CVAP S1_3_c7_c12_1
++#define MSR_NAME_DC_CGVAP S1_3_c7_c12_3
++#define MSR_NAME_DC_CGDVAP S1_3_c7_c12_5
++#define MSR_NAME_DC_CVADP S1_3_c7_c13_1
++#define MSR_NAME_DC_CGVADP S1_3_c7_c13_3
++#define MSR_NAME_DC_CGDVADP S1_3_c7_c13_5
++#define MSR_NAME_DC_CIVAC S1_3_c7_c14_1
++#define MSR_NAME_DC_CIGVAC S1_3_c7_c14_3
++#define MSR_NAME_DC_CIGDVAC S1_3_c7_c14_5
++#define MSR_NAME_AT_S1E2R S1_4_c7_c8_0
++#define MSR_NAME_AT_S1E2W S1_4_c7_c8_1
++#define MSR_NAME_AT_S12E1R S1_4_c7_c8_4
++#define MSR_NAME_AT_S12E1W S1_4_c7_c8_5
++#define MSR_NAME_AT_S12E0R S1_4_c7_c8_6
++#define MSR_NAME_AT_S12E0W S1_4_c7_c8_7
++#define MSR_NAME_TLBI_IPAS2E1IS S1_4_c8_c0_1
++#define MSR_NAME_TLBI_RIPAS2E1IS S1_4_c8_c0_2
++#define MSR_NAME_TLBI_IPAS2LE1IS S1_4_c8_c0_5
++#define MSR_NAME_TLBI_RIPAS2LE1IS S1_4_c8_c0_6
++#define MSR_NAME_TLBI_ALLE2OS S1_4_c8_c1_0
++#define MSR_NAME_TLBI_VAE2OS S1_4_c8_c1_1
++#define MSR_NAME_TLBI_ALLE1OS S1_4_c8_c1_4
++#define MSR_NAME_TLBI_VALE2OS S1_4_c8_c1_5
++#define MSR_NAME_TLBI_VMALLS12E1OS S1_4_c8_c1_6
++#define MSR_NAME_TLBI_RVAE2IS S1_4_c8_c2_1
++#define MSR_NAME_TLBI_RVALE2IS S1_4_c8_c2_5
++#define MSR_NAME_TLBI_ALLE2IS S1_4_c8_c3_0
++#define MSR_NAME_TLBI_VAE2IS S1_4_c8_c3_1
++#define MSR_NAME_TLBI_ALLE1IS S1_4_c8_c3_4
++#define MSR_NAME_TLBI_VALE2IS S1_4_c8_c3_5
++#define MSR_NAME_TLBI_VMALLS12E1IS S1_4_c8_c3_6
++#define MSR_NAME_TLBI_IPAS2E1OS S1_4_c8_c4_0
++#define MSR_NAME_TLBI_IPAS2E1 S1_4_c8_c4_1
++#define MSR_NAME_TLBI_RIPAS2E1 S1_4_c8_c4_2
++#define MSR_NAME_TLBI_RIPAS2E1OS S1_4_c8_c4_3
++#define MSR_NAME_TLBI_IPAS2LE1OS S1_4_c8_c4_4
++#define MSR_NAME_TLBI_IPAS2LE1 S1_4_c8_c4_5
++#define MSR_NAME_TLBI_RIPAS2LE1 S1_4_c8_c4_6
++#define MSR_NAME_TLBI_RIPAS2LE1OS S1_4_c8_c4_7
++#define MSR_NAME_TLBI_RVAE2OS S1_4_c8_c5_1
++#define MSR_NAME_TLBI_RVALE2OS S1_4_c8_c5_5
++#define MSR_NAME_TLBI_RVAE2 S1_4_c8_c6_1
++#define MSR_NAME_TLBI_RVALE2 S1_4_c8_c6_5
++#define MSR_NAME_TLBI_ALLE2 S1_4_c8_c7_0
++#define MSR_NAME_TLBI_VAE2 S1_4_c8_c7_1
++#define MSR_NAME_TLBI_ALLE1 S1_4_c8_c7_4
++#define MSR_NAME_TLBI_VALE2 S1_4_c8_c7_5
++#define MSR_NAME_TLBI_VMALLS12E1 S1_4_c8_c7_6
++#define MSR_NAME_AT_S1E3R S1_6_c7_c8_0
++#define MSR_NAME_AT_S1E3W S1_6_c7_c8_1
++#define MSR_NAME_TLBI_ALLE3OS S1_6_c8_c1_0
++#define MSR_NAME_TLBI_VAE3OS S1_6_c8_c1_1
++#define MSR_NAME_TLBI_VALE3OS S1_6_c8_c1_5
++#define MSR_NAME_TLBI_RVAE3IS S1_6_c8_c2_1
++#define MSR_NAME_TLBI_RVALE3IS S1_6_c8_c2_5
++#define MSR_NAME_TLBI_ALLE3IS S1_6_c8_c3_0
++#define MSR_NAME_TLBI_VAE3IS S1_6_c8_c3_1
++#define MSR_NAME_TLBI_VALE3IS S1_6_c8_c3_5
++#define MSR_NAME_TLBI_RVAE3OS S1_6_c8_c5_1
++#define MSR_NAME_TLBI_RVALE3OS S1_6_c8_c5_5
++#define MSR_NAME_TLBI_RVAE3 S1_6_c8_c6_1
++#define MSR_NAME_TLBI_RVALE3 S1_6_c8_c6_5
++#define MSR_NAME_TLBI_ALLE3 S1_6_c8_c7_0
++#define MSR_NAME_TLBI_VAE3 S1_6_c8_c7_1
++#define MSR_NAME_TLBI_VALE3 S1_6_c8_c7_5
++#define MSR_NAME_OSDTRRX_EL1 S2_0_c0_c0_2
++#define MSR_NAME_DBGBVR0_EL1 S2_0_c0_c0_4
++#define MSR_NAME_DBGBCR0_EL1 S2_0_c0_c0_5
++#define MSR_NAME_DBGWVR0_EL1 S2_0_c0_c0_6
++#define MSR_NAME_DBGWCR0_EL1 S2_0_c0_c0_7
++#define MSR_NAME_DBGBVR1_EL1 S2_0_c0_c1_4
++#define MSR_NAME_DBGBCR1_EL1 S2_0_c0_c1_5
++#define MSR_NAME_DBGWVR1_EL1 S2_0_c0_c1_6
++#define MSR_NAME_DBGWCR1_EL1 S2_0_c0_c1_7
++#define MSR_NAME_MDCCINT_EL1 S2_0_c0_c2_0
++#define MSR_NAME_MDSCR_EL1 S2_0_c0_c2_2
++#define MSR_NAME_DBGBVR2_EL1 S2_0_c0_c2_4
++#define MSR_NAME_DBGBCR2_EL1 S2_0_c0_c2_5
++#define MSR_NAME_DBGWVR2_EL1 S2_0_c0_c2_6
++#define MSR_NAME_DBGWCR2_EL1 S2_0_c0_c2_7
++#define MSR_NAME_OSDTRTX_EL1 S2_0_c0_c3_2
++#define MSR_NAME_DBGBVR3_EL1 S2_0_c0_c3_4
++#define MSR_NAME_DBGBCR3_EL1 S2_0_c0_c3_5
++#define MSR_NAME_DBGWVR3_EL1 S2_0_c0_c3_6
++#define MSR_NAME_DBGWCR3_EL1 S2_0_c0_c3_7
++#define MSR_NAME_DBGBVR4_EL1 S2_0_c0_c4_4
++#define MSR_NAME_DBGBCR4_EL1 S2_0_c0_c4_5
++#define MSR_NAME_DBGWVR4_EL1 S2_0_c0_c4_6
++#define MSR_NAME_DBGWCR4_EL1 S2_0_c0_c4_7
++#define MSR_NAME_DBGBVR5_EL1 S2_0_c0_c5_4
++#define MSR_NAME_DBGBCR5_EL1 S2_0_c0_c5_5
++#define MSR_NAME_DBGWVR5_EL1 S2_0_c0_c5_6
++#define MSR_NAME_DBGWCR5_EL1 S2_0_c0_c5_7
++#define MSR_NAME_OSECCR_EL1 S2_0_c0_c6_2
++#define MSR_NAME_DBGBVR6_EL1 S2_0_c0_c6_4
++#define MSR_NAME_DBGBCR6_EL1 S2_0_c0_c6_5
++#define MSR_NAME_DBGWVR6_EL1 S2_0_c0_c6_6
++#define MSR_NAME_DBGWCR6_EL1 S2_0_c0_c6_7
++#define MSR_NAME_DBGBVR7_EL1 S2_0_c0_c7_4
++#define MSR_NAME_DBGBCR7_EL1 S2_0_c0_c7_5
++#define MSR_NAME_DBGWVR7_EL1 S2_0_c0_c7_6
++#define MSR_NAME_DBGWCR7_EL1 S2_0_c0_c7_7
++#define MSR_NAME_DBGBVR8_EL1 S2_0_c0_c8_4
++#define MSR_NAME_DBGBCR8_EL1 S2_0_c0_c8_5
++#define MSR_NAME_DBGWVR8_EL1 S2_0_c0_c8_6
++#define MSR_NAME_DBGWCR8_EL1 S2_0_c0_c8_7
++#define MSR_NAME_DBGBVR9_EL1 S2_0_c0_c9_4
++#define MSR_NAME_DBGBCR9_EL1 S2_0_c0_c9_5
++#define MSR_NAME_DBGWVR9_EL1 S2_0_c0_c9_6
++#define MSR_NAME_DBGWCR9_EL1 S2_0_c0_c9_7
++#define MSR_NAME_DBGBVR10_EL1 S2_0_c0_c10_4
++#define MSR_NAME_DBGBCR10_EL1 S2_0_c0_c10_5
++#define MSR_NAME_DBGWVR10_EL1 S2_0_c0_c10_6
++#define MSR_NAME_DBGWCR10_EL1 S2_0_c0_c10_7
++#define MSR_NAME_DBGBVR11_EL1 S2_0_c0_c11_4
++#define MSR_NAME_DBGBCR11_EL1 S2_0_c0_c11_5
++#define MSR_NAME_DBGWVR11_EL1 S2_0_c0_c11_6
++#define MSR_NAME_DBGWCR11_EL1 S2_0_c0_c11_7
++#define MSR_NAME_DBGBVR12_EL1 S2_0_c0_c12_4
++#define MSR_NAME_DBGBCR12_EL1 S2_0_c0_c12_5
++#define MSR_NAME_DBGWVR12_EL1 S2_0_c0_c12_6
++#define MSR_NAME_DBGWCR12_EL1 S2_0_c0_c12_7
++#define MSR_NAME_DBGBVR13_EL1 S2_0_c0_c13_4
++#define MSR_NAME_DBGBCR13_EL1 S2_0_c0_c13_5
++#define MSR_NAME_DBGWVR13_EL1 S2_0_c0_c13_6
++#define MSR_NAME_DBGWCR13_EL1 S2_0_c0_c13_7
++#define MSR_NAME_DBGBVR14_EL1 S2_0_c0_c14_4
++#define MSR_NAME_DBGBCR14_EL1 S2_0_c0_c14_5
++#define MSR_NAME_DBGWVR14_EL1 S2_0_c0_c14_6
++#define MSR_NAME_DBGWCR14_EL1 S2_0_c0_c14_7
++#define MSR_NAME_DBGBVR15_EL1 S2_0_c0_c15_4
++#define MSR_NAME_DBGBCR15_EL1 S2_0_c0_c15_5
++#define MSR_NAME_DBGWVR15_EL1 S2_0_c0_c15_6
++#define MSR_NAME_DBGWCR15_EL1 S2_0_c0_c15_7
++#define MSR_NAME_MDRAR_EL1 S2_0_c1_c0_0
++#define MSR_NAME_OSLAR_EL1 S2_0_c1_c0_4
++#define MSR_NAME_OSLSR_EL1 S2_0_c1_c1_4
++#define MSR_NAME_OSDLR_EL1 S2_0_c1_c3_4
++#define MSR_NAME_DBGPRCR_EL1 S2_0_c1_c4_4
++#define MSR_NAME_DBGCLAIMSET_EL1 S2_0_c7_c8_6
++#define MSR_NAME_DBGCLAIMCLR_EL1 S2_0_c7_c9_6
++#define MSR_NAME_DBGAUTHSTATUS_EL1 S2_0_c7_c14_6
++#define MSR_NAME_MDCCSR_EL0 S2_3_c0_c1_0
++#define MSR_NAME_DBGDTR_EL0 S2_3_c0_c4_0
++#define MSR_NAME_DBGDTRRX_EL0 S2_3_c0_c5_0
++#define MSR_NAME_DBGVCR32_EL2 S2_4_c0_c7_0
++#define MSR_NAME_MIDR_EL1 S3_0_c0_c0_0
++#define MSR_NAME_MPIDR_EL1 S3_0_c0_c0_5
++#define MSR_NAME_REVIDR_EL1 S3_0_c0_c0_6
++#define MSR_NAME_ID_PFR0_EL1 S3_0_c0_c1_0
++#define MSR_NAME_ID_PFR1_EL1 S3_0_c0_c1_1
++#define MSR_NAME_ID_DFR0_EL1 S3_0_c0_c1_2
++#define MSR_NAME_ID_AFR0_EL1 S3_0_c0_c1_3
++#define MSR_NAME_ID_MMFR0_EL1 S3_0_c0_c1_4
++#define MSR_NAME_ID_MMFR1_EL1 S3_0_c0_c1_5
++#define MSR_NAME_ID_MMFR2_EL1 S3_0_c0_c1_6
++#define MSR_NAME_ID_MMFR3_EL1 S3_0_c0_c1_7
++#define MSR_NAME_ID_ISAR0_EL1 S3_0_c0_c2_0
++#define MSR_NAME_ID_ISAR1_EL1 S3_0_c0_c2_1
++#define MSR_NAME_ID_ISAR2_EL1 S3_0_c0_c2_2
++#define MSR_NAME_ID_ISAR3_EL1 S3_0_c0_c2_3
++#define MSR_NAME_ID_ISAR4_EL1 S3_0_c0_c2_4
++#define MSR_NAME_ID_ISAR5_EL1 S3_0_c0_c2_5
++#define MSR_NAME_ID_MMFR4_EL1 S3_0_c0_c2_6
++#define MSR_NAME_ID_ISAR6_EL1 S3_0_c0_c2_7
++#define MSR_NAME_MVFR0_EL1 S3_0_c0_c3_0
++#define MSR_NAME_MVFR1_EL1 S3_0_c0_c3_1
++#define MSR_NAME_MVFR2_EL1 S3_0_c0_c3_2
++#define MSR_NAME_ID_PFR2_EL1 S3_0_c0_c3_4
++#define MSR_NAME_ID_DFR1_EL1 S3_0_c0_c3_5
++#define MSR_NAME_ID_MMFR5_EL1 S3_0_c0_c3_6
++#define MSR_NAME_ID_AA64PFR0_EL1 S3_0_c0_c4_0
++#define MSR_NAME_ID_AA64PFR1_EL1 S3_0_c0_c4_1
++#define MSR_NAME_ID_AA64ZFR0_EL1 S3_0_c0_c4_4
++#define MSR_NAME_ID_AA64DFR0_EL1 S3_0_c0_c5_0
++#define MSR_NAME_ID_AA64DFR1_EL1 S3_0_c0_c5_1
++#define MSR_NAME_ID_AA64AFR0_EL1 S3_0_c0_c5_4
++#define MSR_NAME_ID_AA64AFR1_EL1 S3_0_c0_c5_5
++#define MSR_NAME_ID_AA64ISAR0_EL1 S3_0_c0_c6_0
++#define MSR_NAME_ID_AA64ISAR1_EL1 S3_0_c0_c6_1
++#define MSR_NAME_ID_AA64MMFR0_EL1 S3_0_c0_c7_0
++#define MSR_NAME_ID_AA64MMFR1_EL1 S3_0_c0_c7_1
++#define MSR_NAME_ID_AA64MMFR2_EL1 S3_0_c0_c7_2
++#define MSR_NAME_SCTLR_EL1 S3_0_c1_c0_0
++#define MSR_NAME_ACTLR_EL1 S3_0_c1_c0_1
++#define MSR_NAME_CPACR_EL1 S3_0_c1_c0_2
++#define MSR_NAME_RGSR_EL1 S3_0_c1_c0_5
++#define MSR_NAME_GCR_EL1 S3_0_c1_c0_6
++#define MSR_NAME_ZCR_EL1 S3_0_c1_c2_0
++#define MSR_NAME_TRFCR_EL1 S3_0_c1_c2_1
++#define MSR_NAME_TTBR0_EL1 S3_0_c2_c0_0
++#define MSR_NAME_TTBR1_EL1 S3_0_c2_c0_1
++#define MSR_NAME_TCR_EL1 S3_0_c2_c0_2
++#define MSR_NAME_APIAKeyLo_EL1 S3_0_c2_c1_0
++#define MSR_NAME_APIAKeyHi_EL1 S3_0_c2_c1_1
++#define MSR_NAME_APIBKeyLo_EL1 S3_0_c2_c1_2
++#define MSR_NAME_APIBKeyHi_EL1 S3_0_c2_c1_3
++#define MSR_NAME_APDAKeyLo_EL1 S3_0_c2_c2_0
++#define MSR_NAME_APDAKeyHi_EL1 S3_0_c2_c2_1
++#define MSR_NAME_APDBKeyLo_EL1 S3_0_c2_c2_2
++#define MSR_NAME_APDBKeyHi_EL1 S3_0_c2_c2_3
++#define MSR_NAME_APGAKeyLo_EL1 S3_0_c2_c3_0
++#define MSR_NAME_APGAKeyHi_EL1 S3_0_c2_c3_1
++#define MSR_NAME_SPSR_EL1 S3_0_c4_c0_0
++#define MSR_NAME_ELR_EL1 S3_0_c4_c0_1
++#define MSR_NAME_SP_EL0 S3_0_c4_c1_0
++#define MSR_NAME_SPSel S3_0_c4_c2_0
++#define MSR_NAME_CurrentEL S3_0_c4_c2_2
++#define MSR_NAME_PAN S3_0_c4_c2_3
++#define MSR_NAME_UAO S3_0_c4_c2_4
++#define MSR_NAME_ICC_PMR_EL1 S3_0_c4_c6_0
++#define MSR_NAME_AFSR0_EL1 S3_0_c5_c1_0
++#define MSR_NAME_AFSR1_EL1 S3_0_c5_c1_1
++#define MSR_NAME_ESR_EL1 S3_0_c5_c2_0
++#define MSR_NAME_ERRIDR_EL1 S3_0_c5_c3_0
++#define MSR_NAME_ERRSELR_EL1 S3_0_c5_c3_1
++#define MSR_NAME_ERXFR_EL1 S3_0_c5_c4_0
++#define MSR_NAME_ERXCTLR_EL1 S3_0_c5_c4_1
++#define MSR_NAME_ERXSTATUS_EL1 S3_0_c5_c4_2
++#define MSR_NAME_ERXADDR_EL1 S3_0_c5_c4_3
++#define MSR_NAME_ERXPFGF_EL1 S3_0_c5_c4_4
++#define MSR_NAME_ERXPFGCTL_EL1 S3_0_c5_c4_5
++#define MSR_NAME_ERXPFGCDN_EL1 S3_0_c5_c4_6
++#define MSR_NAME_ERXMISC0_EL1 S3_0_c5_c5_0
++#define MSR_NAME_ERXMISC1_EL1 S3_0_c5_c5_1
++#define MSR_NAME_ERXMISC2_EL1 S3_0_c5_c5_2
++#define MSR_NAME_ERXMISC3_EL1 S3_0_c5_c5_3
++#define MSR_NAME_TFSR_EL1 S3_0_c5_c6_0
++#define MSR_NAME_TFSRE0_EL1 S3_0_c5_c6_1
++#define MSR_NAME_FAR_EL1 S3_0_c6_c0_0
++#define MSR_NAME_PAR_EL1 S3_0_c7_c4_0
++#define MSR_NAME_PMSCR_EL1 S3_0_c9_c9_0
++#define MSR_NAME_PMSICR_EL1 S3_0_c9_c9_2
++#define MSR_NAME_PMSIRR_EL1 S3_0_c9_c9_3
++#define MSR_NAME_PMSFCR_EL1 S3_0_c9_c9_4
++#define MSR_NAME_PMSEVFR_EL1 S3_0_c9_c9_5
++#define MSR_NAME_PMSLATFR_EL1 S3_0_c9_c9_6
++#define MSR_NAME_PMSIDR_EL1 S3_0_c9_c9_7
++#define MSR_NAME_PMBLIMITR_EL1 S3_0_c9_c10_0
++#define MSR_NAME_PMBPTR_EL1 S3_0_c9_c10_1
++#define MSR_NAME_PMBSR_EL1 S3_0_c9_c10_3
++#define MSR_NAME_PMBIDR_EL1 S3_0_c9_c10_7
++#define MSR_NAME_PMINTENSET_EL1 S3_0_c9_c14_1
++#define MSR_NAME_PMINTENCLR_EL1 S3_0_c9_c14_2
++#define MSR_NAME_PMMIR_EL1 S3_0_c9_c14_6
++#define MSR_NAME_MAIR_EL1 S3_0_c10_c2_0
++#define MSR_NAME_AMAIR_EL1 S3_0_c10_c3_0
++#define MSR_NAME_LORSA_EL1 S3_0_c10_c4_0
++#define MSR_NAME_LOREA_EL1 S3_0_c10_c4_1
++#define MSR_NAME_LORN_EL1 S3_0_c10_c4_2
++#define MSR_NAME_LORC_EL1 S3_0_c10_c4_3
++#define MSR_NAME_MPAMIDR_EL1 S3_0_c10_c4_4
++#define MSR_NAME_LORID_EL1 S3_0_c10_c4_7
++#define MSR_NAME_MPAM1_EL1 S3_0_c10_c5_0
++#define MSR_NAME_MPAM0_EL1 S3_0_c10_c5_1
++#define MSR_NAME_VBAR_EL1 S3_0_c12_c0_0
++#define MSR_NAME_RVBAR_EL1 S3_0_c12_c0_1
++#define MSR_NAME_RMR_EL1 S3_0_c12_c0_2
++#define MSR_NAME_ISR_EL1 S3_0_c12_c1_0
++#define MSR_NAME_DISR_EL1 S3_0_c12_c1_1
++#define MSR_NAME_ICC_IAR0_EL1 S3_0_c12_c8_0
++#define MSR_NAME_ICC_EOIR0_EL1 S3_0_c12_c8_1
++#define MSR_NAME_ICC_HPPIR0_EL1 S3_0_c12_c8_2
++#define MSR_NAME_ICC_BPR0_EL1 S3_0_c12_c8_3
++#define MSR_NAME_ICC_AP0R0_EL1 S3_0_c12_c8_4
++#define MSR_NAME_ICC_AP0R1_EL1 S3_0_c12_c8_5
++#define MSR_NAME_ICC_AP0R2_EL1 S3_0_c12_c8_6
++#define MSR_NAME_ICC_AP0R3_EL1 S3_0_c12_c8_7
++#define MSR_NAME_ICC_AP1R0_EL1 S3_0_c12_c9_0
++#define MSR_NAME_ICC_AP1R1_EL1 S3_0_c12_c9_1
++#define MSR_NAME_ICC_AP1R2_EL1 S3_0_c12_c9_2
++#define MSR_NAME_ICC_AP1R3_EL1 S3_0_c12_c9_3
++#define MSR_NAME_ICC_DIR_EL1 S3_0_c12_c11_1
++#define MSR_NAME_ICC_RPR_EL1 S3_0_c12_c11_3
++#define MSR_NAME_ICC_SGI1R_EL1 S3_0_c12_c11_5
++#define MSR_NAME_ICC_ASGI1R_EL1 S3_0_c12_c11_6
++#define MSR_NAME_ICC_SGI0R_EL1 S3_0_c12_c11_7
++#define MSR_NAME_ICC_IAR1_EL1 S3_0_c12_c12_0
++#define MSR_NAME_ICC_EOIR1_EL1 S3_0_c12_c12_1
++#define MSR_NAME_ICC_HPPIR1_EL1 S3_0_c12_c12_2
++#define MSR_NAME_ICC_BPR1_EL1 S3_0_c12_c12_3
++#define MSR_NAME_ICC_CTLR_EL1 S3_0_c12_c12_4
++#define MSR_NAME_ICC_SRE_EL1 S3_0_c12_c12_5
++#define MSR_NAME_ICC_IGRPEN0_EL1 S3_0_c12_c12_6
++#define MSR_NAME_ICC_IGRPEN1_EL1 S3_0_c12_c12_7
++#define MSR_NAME_CONTEXTIDR_EL1 S3_0_c13_c0_1
++#define MSR_NAME_TPIDR_EL1 S3_0_c13_c0_4
++#define MSR_NAME_SCXTNUM_EL1 S3_0_c13_c0_7
++#define MSR_NAME_CNTKCTL_EL1 S3_0_c14_c1_0
++#define MSR_NAME_CCSIDR_EL1 S3_1_c0_c0_0
++#define MSR_NAME_CLIDR_EL1 S3_1_c0_c0_1
++#define MSR_NAME_CCSIDR2_EL1 S3_1_c0_c0_2
++#define MSR_NAME_GMID_EL1 S3_1_c0_c0_4
++#define MSR_NAME_AIDR_EL1 S3_1_c0_c0_7
++#define MSR_NAME_CSSELR_EL1 S3_2_c0_c0_0
++#define MSR_NAME_CTR_EL0 S3_3_c0_c0_1
++#define MSR_NAME_DCZID_EL0 S3_3_c0_c0_7
++#define MSR_NAME_RNDR S3_3_c2_c4_0
++#define MSR_NAME_RNDRRS S3_3_c2_c4_1
++#define MSR_NAME_NZCV S3_3_c4_c2_0
++#define MSR_NAME_DAIF S3_3_c4_c2_1
++#define MSR_NAME_DIT S3_3_c4_c2_5
++#define MSR_NAME_SSBS S3_3_c4_c2_6
++#define MSR_NAME_TCO S3_3_c4_c2_7
++#define MSR_NAME_FPCR S3_3_c4_c4_0
++#define MSR_NAME_FPSR S3_3_c4_c4_1
++#define MSR_NAME_DSPSR_EL0 S3_3_c4_c5_0
++#define MSR_NAME_DLR_EL0 S3_3_c4_c5_1
++#define MSR_NAME_PMCR_EL0 S3_3_c9_c12_0
++#define MSR_NAME_PMCNTENSET_EL0 S3_3_c9_c12_1
++#define MSR_NAME_PMCNTENCLR_EL0 S3_3_c9_c12_2
++#define MSR_NAME_PMOVSCLR_EL0 S3_3_c9_c12_3
++#define MSR_NAME_PMSWINC_EL0 S3_3_c9_c12_4
++#define MSR_NAME_PMSELR_EL0 S3_3_c9_c12_5
++#define MSR_NAME_PMCEID0_EL0 S3_3_c9_c12_6
++#define MSR_NAME_PMCEID1_EL0 S3_3_c9_c12_7
++#define MSR_NAME_PMCCNTR_EL0 S3_3_c9_c13_0
++#define MSR_NAME_PMXEVTYPER_EL0 S3_3_c9_c13_1
++#define MSR_NAME_PMXEVCNTR_EL0 S3_3_c9_c13_2
++#define MSR_NAME_PMUSERENR_EL0 S3_3_c9_c14_0
++#define MSR_NAME_PMOVSSET_EL0 S3_3_c9_c14_3
++#define MSR_NAME_TPIDR_EL0 S3_3_c13_c0_2
++#define MSR_NAME_TPIDRRO_EL0 S3_3_c13_c0_3
++#define MSR_NAME_SCXTNUM_EL0 S3_3_c13_c0_7
++#define MSR_NAME_AMCR_EL0 S3_3_c13_c2_0
++#define MSR_NAME_AMCFGR_EL0 S3_3_c13_c2_1
++#define MSR_NAME_AMCGCR_EL0 S3_3_c13_c2_2
++#define MSR_NAME_AMUSERENR_EL0 S3_3_c13_c2_3
++#define MSR_NAME_AMCNTENCLR0_EL0 S3_3_c13_c2_4
++#define MSR_NAME_AMCNTENSET0_EL0 S3_3_c13_c2_5
++#define MSR_NAME_AMCG1IDR_EL0 S3_3_c13_c2_6
++#define MSR_NAME_AMCNTENCLR1_EL0 S3_3_c13_c3_0
++#define MSR_NAME_AMCNTENSET1_EL0 S3_3_c13_c3_1
++#define MSR_NAME_AMEVCNTR00_EL0 S3_3_c13_c4_0
++#define MSR_NAME_AMEVCNTR01_EL0 S3_3_c13_c4_1
++#define MSR_NAME_AMEVCNTR02_EL0 S3_3_c13_c4_2
++#define MSR_NAME_AMEVCNTR03_EL0 S3_3_c13_c4_3
++#define MSR_NAME_AMEVCNTR04_EL0 S3_3_c13_c4_4
++#define MSR_NAME_AMEVCNTR05_EL0 S3_3_c13_c4_5
++#define MSR_NAME_AMEVCNTR06_EL0 S3_3_c13_c4_6
++#define MSR_NAME_AMEVCNTR07_EL0 S3_3_c13_c4_7
++#define MSR_NAME_AMEVCNTR08_EL0 S3_3_c13_c5_0
++#define MSR_NAME_AMEVCNTR09_EL0 S3_3_c13_c5_1
++#define MSR_NAME_AMEVCNTR010_EL0 S3_3_c13_c5_2
++#define MSR_NAME_AMEVCNTR011_EL0 S3_3_c13_c5_3
++#define MSR_NAME_AMEVCNTR012_EL0 S3_3_c13_c5_4
++#define MSR_NAME_AMEVCNTR013_EL0 S3_3_c13_c5_5
++#define MSR_NAME_AMEVCNTR014_EL0 S3_3_c13_c5_6
++#define MSR_NAME_AMEVCNTR015_EL0 S3_3_c13_c5_7
++#define MSR_NAME_AMEVTYPER00_EL0 S3_3_c13_c6_0
++#define MSR_NAME_AMEVTYPER01_EL0 S3_3_c13_c6_1
++#define MSR_NAME_AMEVTYPER02_EL0 S3_3_c13_c6_2
++#define MSR_NAME_AMEVTYPER03_EL0 S3_3_c13_c6_3
++#define MSR_NAME_AMEVTYPER04_EL0 S3_3_c13_c6_4
++#define MSR_NAME_AMEVTYPER05_EL0 S3_3_c13_c6_5
++#define MSR_NAME_AMEVTYPER06_EL0 S3_3_c13_c6_6
++#define MSR_NAME_AMEVTYPER07_EL0 S3_3_c13_c6_7
++#define MSR_NAME_AMEVTYPER08_EL0 S3_3_c13_c7_0
++#define MSR_NAME_AMEVTYPER09_EL0 S3_3_c13_c7_1
++#define MSR_NAME_AMEVTYPER010_EL0 S3_3_c13_c7_2
++#define MSR_NAME_AMEVTYPER011_EL0 S3_3_c13_c7_3
++#define MSR_NAME_AMEVTYPER012_EL0 S3_3_c13_c7_4
++#define MSR_NAME_AMEVTYPER013_EL0 S3_3_c13_c7_5
++#define MSR_NAME_AMEVTYPER014_EL0 S3_3_c13_c7_6
++#define MSR_NAME_AMEVTYPER015_EL0 S3_3_c13_c7_7
++#define MSR_NAME_AMEVCNTR10_EL0 S3_3_c13_c12_0
++#define MSR_NAME_AMEVCNTR11_EL0 S3_3_c13_c12_1
++#define MSR_NAME_AMEVCNTR12_EL0 S3_3_c13_c12_2
++#define MSR_NAME_AMEVCNTR13_EL0 S3_3_c13_c12_3
++#define MSR_NAME_AMEVCNTR14_EL0 S3_3_c13_c12_4
++#define MSR_NAME_AMEVCNTR15_EL0 S3_3_c13_c12_5
++#define MSR_NAME_AMEVCNTR16_EL0 S3_3_c13_c12_6
++#define MSR_NAME_AMEVCNTR17_EL0 S3_3_c13_c12_7
++#define MSR_NAME_AMEVCNTR18_EL0 S3_3_c13_c13_0
++#define MSR_NAME_AMEVCNTR19_EL0 S3_3_c13_c13_1
++#define MSR_NAME_AMEVCNTR110_EL0 S3_3_c13_c13_2
++#define MSR_NAME_AMEVCNTR111_EL0 S3_3_c13_c13_3
++#define MSR_NAME_AMEVCNTR112_EL0 S3_3_c13_c13_4
++#define MSR_NAME_AMEVCNTR113_EL0 S3_3_c13_c13_5
++#define MSR_NAME_AMEVCNTR114_EL0 S3_3_c13_c13_6
++#define MSR_NAME_AMEVCNTR115_EL0 S3_3_c13_c13_7
++#define MSR_NAME_AMEVTYPER10_EL0 S3_3_c13_c14_0
++#define MSR_NAME_AMEVTYPER11_EL0 S3_3_c13_c14_1
++#define MSR_NAME_AMEVTYPER12_EL0 S3_3_c13_c14_2
++#define MSR_NAME_AMEVTYPER13_EL0 S3_3_c13_c14_3
++#define MSR_NAME_AMEVTYPER14_EL0 S3_3_c13_c14_4
++#define MSR_NAME_AMEVTYPER15_EL0 S3_3_c13_c14_5
++#define MSR_NAME_AMEVTYPER16_EL0 S3_3_c13_c14_6
++#define MSR_NAME_AMEVTYPER17_EL0 S3_3_c13_c14_7
++#define MSR_NAME_AMEVTYPER18_EL0 S3_3_c13_c15_0
++#define MSR_NAME_AMEVTYPER19_EL0 S3_3_c13_c15_1
++#define MSR_NAME_AMEVTYPER110_EL0 S3_3_c13_c15_2
++#define MSR_NAME_AMEVTYPER111_EL0 S3_3_c13_c15_3
++#define MSR_NAME_AMEVTYPER112_EL0 S3_3_c13_c15_4
++#define MSR_NAME_AMEVTYPER113_EL0 S3_3_c13_c15_5
++#define MSR_NAME_AMEVTYPER114_EL0 S3_3_c13_c15_6
++#define MSR_NAME_AMEVTYPER115_EL0 S3_3_c13_c15_7
++#define MSR_NAME_CNTFRQ_EL0 S3_3_c14_c0_0
++#define MSR_NAME_CNTPCT_EL0 S3_3_c14_c0_1
++#define MSR_NAME_CNTVCT_EL0 S3_3_c14_c0_2
++#define MSR_NAME_CNTPCTSS_EL0 S3_3_c14_c0_5
++#define MSR_NAME_CNTVCTSS_EL0 S3_3_c14_c0_6
++#define MSR_NAME_CNTP_TVAL_EL0 S3_3_c14_c2_0
++#define MSR_NAME_CNTP_CTL_EL0 S3_3_c14_c2_1
++#define MSR_NAME_CNTP_CVAL_EL0 S3_3_c14_c2_2
++#define MSR_NAME_CNTV_TVAL_EL0 S3_3_c14_c3_0
++#define MSR_NAME_CNTV_CTL_EL0 S3_3_c14_c3_1
++#define MSR_NAME_CNTV_CVAL_EL0 S3_3_c14_c3_2
++#define MSR_NAME_PMEVCNTR0_EL0 S3_3_c14_c8_0
++#define MSR_NAME_PMEVCNTR1_EL0 S3_3_c14_c8_1
++#define MSR_NAME_PMEVCNTR2_EL0 S3_3_c14_c8_2
++#define MSR_NAME_PMEVCNTR3_EL0 S3_3_c14_c8_3
++#define MSR_NAME_PMEVCNTR4_EL0 S3_3_c14_c8_4
++#define MSR_NAME_PMEVCNTR5_EL0 S3_3_c14_c8_5
++#define MSR_NAME_PMEVCNTR6_EL0 S3_3_c14_c8_6
++#define MSR_NAME_PMEVCNTR7_EL0 S3_3_c14_c8_7
++#define MSR_NAME_PMEVCNTR8_EL0 S3_3_c14_c9_0
++#define MSR_NAME_PMEVCNTR9_EL0 S3_3_c14_c9_1
++#define MSR_NAME_PMEVCNTR10_EL0 S3_3_c14_c9_2
++#define MSR_NAME_PMEVCNTR11_EL0 S3_3_c14_c9_3
++#define MSR_NAME_PMEVCNTR12_EL0 S3_3_c14_c9_4
++#define MSR_NAME_PMEVCNTR13_EL0 S3_3_c14_c9_5
++#define MSR_NAME_PMEVCNTR14_EL0 S3_3_c14_c9_6
++#define MSR_NAME_PMEVCNTR15_EL0 S3_3_c14_c9_7
++#define MSR_NAME_PMEVCNTR16_EL0 S3_3_c14_c10_0
++#define MSR_NAME_PMEVCNTR17_EL0 S3_3_c14_c10_1
++#define MSR_NAME_PMEVCNTR18_EL0 S3_3_c14_c10_2
++#define MSR_NAME_PMEVCNTR19_EL0 S3_3_c14_c10_3
++#define MSR_NAME_PMEVCNTR20_EL0 S3_3_c14_c10_4
++#define MSR_NAME_PMEVCNTR21_EL0 S3_3_c14_c10_5
++#define MSR_NAME_PMEVCNTR22_EL0 S3_3_c14_c10_6
++#define MSR_NAME_PMEVCNTR23_EL0 S3_3_c14_c10_7
++#define MSR_NAME_PMEVCNTR24_EL0 S3_3_c14_c11_0
++#define MSR_NAME_PMEVCNTR25_EL0 S3_3_c14_c11_1
++#define MSR_NAME_PMEVCNTR26_EL0 S3_3_c14_c11_2
++#define MSR_NAME_PMEVCNTR27_EL0 S3_3_c14_c11_3
++#define MSR_NAME_PMEVCNTR28_EL0 S3_3_c14_c11_4
++#define MSR_NAME_PMEVCNTR29_EL0 S3_3_c14_c11_5
++#define MSR_NAME_PMEVCNTR30_EL0 S3_3_c14_c11_6
++#define MSR_NAME_PMEVCNTR31_EL0 S3_3_c14_c11_7
++#define MSR_NAME_PMEVTYPER0_EL0 S3_3_c14_c12_0
++#define MSR_NAME_PMEVTYPER1_EL0 S3_3_c14_c12_1
++#define MSR_NAME_PMEVTYPER2_EL0 S3_3_c14_c12_2
++#define MSR_NAME_PMEVTYPER3_EL0 S3_3_c14_c12_3
++#define MSR_NAME_PMEVTYPER4_EL0 S3_3_c14_c12_4
++#define MSR_NAME_PMEVTYPER5_EL0 S3_3_c14_c12_5
++#define MSR_NAME_PMEVTYPER6_EL0 S3_3_c14_c12_6
++#define MSR_NAME_PMEVTYPER7_EL0 S3_3_c14_c12_7
++#define MSR_NAME_PMEVTYPER8_EL0 S3_3_c14_c13_0
++#define MSR_NAME_PMEVTYPER9_EL0 S3_3_c14_c13_1
++#define MSR_NAME_PMEVTYPER10_EL0 S3_3_c14_c13_2
++#define MSR_NAME_PMEVTYPER11_EL0 S3_3_c14_c13_3
++#define MSR_NAME_PMEVTYPER12_EL0 S3_3_c14_c13_4
++#define MSR_NAME_PMEVTYPER13_EL0 S3_3_c14_c13_5
++#define MSR_NAME_PMEVTYPER14_EL0 S3_3_c14_c13_6
++#define MSR_NAME_PMEVTYPER15_EL0 S3_3_c14_c13_7
++#define MSR_NAME_PMEVTYPER16_EL0 S3_3_c14_c14_0
++#define MSR_NAME_PMEVTYPER17_EL0 S3_3_c14_c14_1
++#define MSR_NAME_PMEVTYPER18_EL0 S3_3_c14_c14_2
++#define MSR_NAME_PMEVTYPER19_EL0 S3_3_c14_c14_3
++#define MSR_NAME_PMEVTYPER20_EL0 S3_3_c14_c14_4
++#define MSR_NAME_PMEVTYPER21_EL0 S3_3_c14_c14_5
++#define MSR_NAME_PMEVTYPER22_EL0 S3_3_c14_c14_6
++#define MSR_NAME_PMEVTYPER23_EL0 S3_3_c14_c14_7
++#define MSR_NAME_PMEVTYPER24_EL0 S3_3_c14_c15_0
++#define MSR_NAME_PMEVTYPER25_EL0 S3_3_c14_c15_1
++#define MSR_NAME_PMEVTYPER26_EL0 S3_3_c14_c15_2
++#define MSR_NAME_PMEVTYPER27_EL0 S3_3_c14_c15_3
++#define MSR_NAME_PMEVTYPER28_EL0 S3_3_c14_c15_4
++#define MSR_NAME_PMEVTYPER29_EL0 S3_3_c14_c15_5
++#define MSR_NAME_PMEVTYPER30_EL0 S3_3_c14_c15_6
++#define MSR_NAME_PMCCFILTR_EL0 S3_3_c14_c15_7
++#define MSR_NAME_VPIDR_EL2 S3_4_c0_c0_0
++#define MSR_NAME_VMPIDR_EL2 S3_4_c0_c0_5
++#define MSR_NAME_SCTLR_EL2 S3_4_c1_c0_0
++#define MSR_NAME_ACTLR_EL2 S3_4_c1_c0_1
++#define MSR_NAME_HCR_EL2 S3_4_c1_c1_0
++#define MSR_NAME_MDCR_EL2 S3_4_c1_c1_1
++#define MSR_NAME_CPTR_EL2 S3_4_c1_c1_2
++#define MSR_NAME_HSTR_EL2 S3_4_c1_c1_3
++#define MSR_NAME_HFGRTR_EL2 S3_4_c1_c1_4
++#define MSR_NAME_HFGWTR_EL2 S3_4_c1_c1_5
++#define MSR_NAME_HFGITR_EL2 S3_4_c1_c1_6
++#define MSR_NAME_HACR_EL2 S3_4_c1_c1_7
++#define MSR_NAME_ZCR_EL2 S3_4_c1_c2_0
++#define MSR_NAME_TRFCR_EL2 S3_4_c1_c2_1
++#define MSR_NAME_SDER32_EL2 S3_4_c1_c3_1
++#define MSR_NAME_TTBR0_EL2 S3_4_c2_c0_0
++#define MSR_NAME_TTBR1_EL2 S3_4_c2_c0_1
++#define MSR_NAME_TCR_EL2 S3_4_c2_c0_2
++#define MSR_NAME_VTTBR_EL2 S3_4_c2_c1_0
++#define MSR_NAME_VTCR_EL2 S3_4_c2_c1_2
++#define MSR_NAME_VNCR_EL2 S3_4_c2_c2_0
++#define MSR_NAME_VSTTBR_EL2 S3_4_c2_c6_0
++#define MSR_NAME_VSTCR_EL2 S3_4_c2_c6_2
++#define MSR_NAME_DACR32_EL2 S3_4_c3_c0_0
++#define MSR_NAME_HDFGRTR_EL2 S3_4_c3_c1_4
++#define MSR_NAME_HDFGWTR_EL2 S3_4_c3_c1_5
++#define MSR_NAME_HAFGRTR_EL2 S3_4_c3_c1_6
++#define MSR_NAME_SPSR_EL2 S3_4_c4_c0_0
++#define MSR_NAME_ELR_EL2 S3_4_c4_c0_1
++#define MSR_NAME_SP_EL1 S3_4_c4_c1_0
++#define MSR_NAME_SPSR_irq S3_4_c4_c3_0
++#define MSR_NAME_SPSR_abt S3_4_c4_c3_1
++#define MSR_NAME_SPSR_und S3_4_c4_c3_2
++#define MSR_NAME_SPSR_fiq S3_4_c4_c3_3
++#define MSR_NAME_IFSR32_EL2 S3_4_c5_c0_1
++#define MSR_NAME_AFSR0_EL2 S3_4_c5_c1_0
++#define MSR_NAME_AFSR1_EL2 S3_4_c5_c1_1
++#define MSR_NAME_ESR_EL2 S3_4_c5_c2_0
++#define MSR_NAME_VSESR_EL2 S3_4_c5_c2_3
++#define MSR_NAME_FPEXC32_EL2 S3_4_c5_c3_0
++#define MSR_NAME_TFSR_EL2 S3_4_c5_c6_0
++#define MSR_NAME_FAR_EL2 S3_4_c6_c0_0
++#define MSR_NAME_HPFAR_EL2 S3_4_c6_c0_4
++#define MSR_NAME_PMSCR_EL2 S3_4_c9_c9_0
++#define MSR_NAME_MAIR_EL2 S3_4_c10_c2_0
++#define MSR_NAME_AMAIR_EL2 S3_4_c10_c3_0
++#define MSR_NAME_MPAMHCR_EL2 S3_4_c10_c4_0
++#define MSR_NAME_MPAMVPMV_EL2 S3_4_c10_c4_1
++#define MSR_NAME_MPAM2_EL2 S3_4_c10_c5_0
++#define MSR_NAME_MPAMVPM0_EL2 S3_4_c10_c6_0
++#define MSR_NAME_MPAMVPM1_EL2 S3_4_c10_c6_1
++#define MSR_NAME_MPAMVPM2_EL2 S3_4_c10_c6_2
++#define MSR_NAME_MPAMVPM3_EL2 S3_4_c10_c6_3
++#define MSR_NAME_MPAMVPM4_EL2 S3_4_c10_c6_4
++#define MSR_NAME_MPAMVPM5_EL2 S3_4_c10_c6_5
++#define MSR_NAME_MPAMVPM6_EL2 S3_4_c10_c6_6
++#define MSR_NAME_MPAMVPM7_EL2 S3_4_c10_c6_7
++#define MSR_NAME_VBAR_EL2 S3_4_c12_c0_0
++#define MSR_NAME_RVBAR_EL2 S3_4_c12_c0_1
++#define MSR_NAME_RMR_EL2 S3_4_c12_c0_2
++#define MSR_NAME_VDISR_EL2 S3_4_c12_c1_1
++#define MSR_NAME_ICH_AP0R0_EL2 S3_4_c12_c8_0
++#define MSR_NAME_ICH_AP0R1_EL2 S3_4_c12_c8_1
++#define MSR_NAME_ICH_AP0R2_EL2 S3_4_c12_c8_2
++#define MSR_NAME_ICH_AP0R3_EL2 S3_4_c12_c8_3
++#define MSR_NAME_ICH_AP1R0_EL2 S3_4_c12_c9_0
++#define MSR_NAME_ICH_AP1R1_EL2 S3_4_c12_c9_1
++#define MSR_NAME_ICH_AP1R2_EL2 S3_4_c12_c9_2
++#define MSR_NAME_ICH_AP1R3_EL2 S3_4_c12_c9_3
++#define MSR_NAME_ICC_SRE_EL2 S3_4_c12_c9_5
++#define MSR_NAME_ICH_HCR_EL2 S3_4_c12_c11_0
++#define MSR_NAME_ICH_VTR_EL2 S3_4_c12_c11_1
++#define MSR_NAME_ICH_MISR_EL2 S3_4_c12_c11_2
++#define MSR_NAME_ICH_EISR_EL2 S3_4_c12_c11_3
++#define MSR_NAME_ICH_ELRSR_EL2 S3_4_c12_c11_5
++#define MSR_NAME_ICH_VMCR_EL2 S3_4_c12_c11_7
++#define MSR_NAME_ICH_LR0_EL2 S3_4_c12_c12_0
++#define MSR_NAME_ICH_LR1_EL2 S3_4_c12_c12_1
++#define MSR_NAME_ICH_LR2_EL2 S3_4_c12_c12_2
++#define MSR_NAME_ICH_LR3_EL2 S3_4_c12_c12_3
++#define MSR_NAME_ICH_LR4_EL2 S3_4_c12_c12_4
++#define MSR_NAME_ICH_LR5_EL2 S3_4_c12_c12_5
++#define MSR_NAME_ICH_LR6_EL2 S3_4_c12_c12_6
++#define MSR_NAME_ICH_LR7_EL2 S3_4_c12_c12_7
++#define MSR_NAME_ICH_LR8_EL2 S3_4_c12_c13_0
++#define MSR_NAME_ICH_LR9_EL2 S3_4_c12_c13_1
++#define MSR_NAME_ICH_LR10_EL2 S3_4_c12_c13_2
++#define MSR_NAME_ICH_LR11_EL2 S3_4_c12_c13_3
++#define MSR_NAME_ICH_LR12_EL2 S3_4_c12_c13_4
++#define MSR_NAME_ICH_LR13_EL2 S3_4_c12_c13_5
++#define MSR_NAME_ICH_LR14_EL2 S3_4_c12_c13_6
++#define MSR_NAME_ICH_LR15_EL2 S3_4_c12_c13_7
++#define MSR_NAME_CONTEXTIDR_EL2 S3_4_c13_c0_1
++#define MSR_NAME_TPIDR_EL2 S3_4_c13_c0_2
++#define MSR_NAME_SCXTNUM_EL2 S3_4_c13_c0_7
++#define MSR_NAME_AMEVCNTVOFF00_EL2 S3_4_c13_c8_0
++#define MSR_NAME_AMEVCNTVOFF01_EL2 S3_4_c13_c8_1
++#define MSR_NAME_AMEVCNTVOFF02_EL2 S3_4_c13_c8_2
++#define MSR_NAME_AMEVCNTVOFF03_EL2 S3_4_c13_c8_3
++#define MSR_NAME_AMEVCNTVOFF04_EL2 S3_4_c13_c8_4
++#define MSR_NAME_AMEVCNTVOFF05_EL2 S3_4_c13_c8_5
++#define MSR_NAME_AMEVCNTVOFF06_EL2 S3_4_c13_c8_6
++#define MSR_NAME_AMEVCNTVOFF07_EL2 S3_4_c13_c8_7
++#define MSR_NAME_AMEVCNTVOFF08_EL2 S3_4_c13_c9_0
++#define MSR_NAME_AMEVCNTVOFF09_EL2 S3_4_c13_c9_1
++#define MSR_NAME_AMEVCNTVOFF010_EL2 S3_4_c13_c9_2
++#define MSR_NAME_AMEVCNTVOFF011_EL2 S3_4_c13_c9_3
++#define MSR_NAME_AMEVCNTVOFF012_EL2 S3_4_c13_c9_4
++#define MSR_NAME_AMEVCNTVOFF013_EL2 S3_4_c13_c9_5
++#define MSR_NAME_AMEVCNTVOFF014_EL2 S3_4_c13_c9_6
++#define MSR_NAME_AMEVCNTVOFF015_EL2 S3_4_c13_c9_7
++#define MSR_NAME_AMEVCNTVOFF10_EL2 S3_4_c13_c10_0
++#define MSR_NAME_AMEVCNTVOFF11_EL2 S3_4_c13_c10_1
++#define MSR_NAME_AMEVCNTVOFF12_EL2 S3_4_c13_c10_2
++#define MSR_NAME_AMEVCNTVOFF13_EL2 S3_4_c13_c10_3
++#define MSR_NAME_AMEVCNTVOFF14_EL2 S3_4_c13_c10_4
++#define MSR_NAME_AMEVCNTVOFF15_EL2 S3_4_c13_c10_5
++#define MSR_NAME_AMEVCNTVOFF16_EL2 S3_4_c13_c10_6
++#define MSR_NAME_AMEVCNTVOFF17_EL2 S3_4_c13_c10_7
++#define MSR_NAME_AMEVCNTVOFF18_EL2 S3_4_c13_c11_0
++#define MSR_NAME_AMEVCNTVOFF19_EL2 S3_4_c13_c11_1
++#define MSR_NAME_AMEVCNTVOFF110_EL2 S3_4_c13_c11_2
++#define MSR_NAME_AMEVCNTVOFF111_EL2 S3_4_c13_c11_3
++#define MSR_NAME_AMEVCNTVOFF112_EL2 S3_4_c13_c11_4
++#define MSR_NAME_AMEVCNTVOFF113_EL2 S3_4_c13_c11_5
++#define MSR_NAME_AMEVCNTVOFF114_EL2 S3_4_c13_c11_6
++#define MSR_NAME_AMEVCNTVOFF115_EL2 S3_4_c13_c11_7
++#define MSR_NAME_CNTVOFF_EL2 S3_4_c14_c0_3
++#define MSR_NAME_CNTPOFF_EL2 S3_4_c14_c0_6
++#define MSR_NAME_CNTHCTL_EL2 S3_4_c14_c1_0
++#define MSR_NAME_CNTHP_TVAL_EL2 S3_4_c14_c2_0
++#define MSR_NAME_CNTHP_CTL_EL2 S3_4_c14_c2_1
++#define MSR_NAME_CNTHP_CVAL_EL2 S3_4_c14_c2_2
++#define MSR_NAME_CNTHV_TVAL_EL2 S3_4_c14_c3_0
++#define MSR_NAME_CNTHV_CTL_EL2 S3_4_c14_c3_1
++#define MSR_NAME_CNTHV_CVAL_EL2 S3_4_c14_c3_2
++#define MSR_NAME_CNTHVS_TVAL_EL2 S3_4_c14_c4_0
++#define MSR_NAME_CNTHVS_CTL_EL2 S3_4_c14_c4_1
++#define MSR_NAME_CNTHVS_CVAL_EL2 S3_4_c14_c4_2
++#define MSR_NAME_CNTHPS_TVAL_EL2 S3_4_c14_c5_0
++#define MSR_NAME_CNTHPS_CTL_EL2 S3_4_c14_c5_1
++#define MSR_NAME_CNTHPS_CVAL_EL2 S3_4_c14_c5_2
++#define MSR_NAME_SCTLR_EL3 S3_6_c1_c0_0
++#define MSR_NAME_ACTLR_EL3 S3_6_c1_c0_1
++#define MSR_NAME_SCR_EL3 S3_6_c1_c1_0
++#define MSR_NAME_SDER32_EL3 S3_6_c1_c1_1
++#define MSR_NAME_CPTR_EL3 S3_6_c1_c1_2
++#define MSR_NAME_ZCR_EL3 S3_6_c1_c2_0
++#define MSR_NAME_MDCR_EL3 S3_6_c1_c3_1
++#define MSR_NAME_TTBR0_EL3 S3_6_c2_c0_0
++#define MSR_NAME_TCR_EL3 S3_6_c2_c0_2
++#define MSR_NAME_SPSR_EL3 S3_6_c4_c0_0
++#define MSR_NAME_ELR_EL3 S3_6_c4_c0_1
++#define MSR_NAME_SP_EL2 S3_6_c4_c1_0
++#define MSR_NAME_AFSR0_EL3 S3_6_c5_c1_0
++#define MSR_NAME_AFSR1_EL3 S3_6_c5_c1_1
++#define MSR_NAME_ESR_EL3 S3_6_c5_c2_0
++#define MSR_NAME_TFSR_EL3 S3_6_c5_c6_0
++#define MSR_NAME_FAR_EL3 S3_6_c6_c0_0
++#define MSR_NAME_MAIR_EL3 S3_6_c10_c2_0
++#define MSR_NAME_AMAIR_EL3 S3_6_c10_c3_0
++#define MSR_NAME_MPAM3_EL3 S3_6_c10_c5_0
++#define MSR_NAME_VBAR_EL3 S3_6_c12_c0_0
++#define MSR_NAME_RVBAR_EL3 S3_6_c12_c0_1
++#define MSR_NAME_RMR_EL3 S3_6_c12_c0_2
++#define MSR_NAME_ICC_CTLR_EL3 S3_6_c12_c12_4
++#define MSR_NAME_ICC_SRE_EL3 S3_6_c12_c12_5
++#define MSR_NAME_ICC_IGRPEN1_EL3 S3_6_c12_c12_7
++#define MSR_NAME_TPIDR_EL3 S3_6_c13_c0_2
++#define MSR_NAME_SCXTNUM_EL3 S3_6_c13_c0_7
++#define MSR_NAME_CNTPS_TVAL_EL1 S3_7_c14_c2_0
++#define MSR_NAME_CNTPS_CTL_EL1 S3_7_c14_c2_1
++#define MSR_NAME_CNTPS_CVAL_EL1 S3_7_c14_c2_2
++
++//
++// apple_system_registers
++//
++
++#define ASR_NAME_HID0 S3_0_c15_c0_0
++#define ASR_NAME_EHID0 S3_0_c15_c0_1
++#define ASR_NAME_HID1 S3_0_c15_c1_0
++#define ASR_NAME_EHID1 S3_0_c15_c1_1
++#define ASR_NAME_HID2 S3_0_c15_c2_0
++#define ASR_NAME_EHID2 S3_0_c15_c2_1
++#define ASR_NAME_HID3 S3_0_c15_c3_0
++#define ASR_NAME_EHID3 S3_0_c15_c3_1
++#define ASR_NAME_HID4 S3_0_c15_c4_0
++#define ASR_NAME_EHID4 S3_0_c15_c4_1
++#define ASR_NAME_HID5 S3_0_c15_c5_0
++#define ASR_NAME_EHID5 S3_0_c15_c5_1
++#define ASR_NAME_HID6 S3_0_c15_c6_0
++#define ASR_NAME_L2_CRAMCONFIG S3_0_c15_c7_0
++#define ASR_NAME_HID8 S3_0_c15_c8_0
++#define ASR_NAME_HID9 S3_0_c15_c9_0
++#define ASR_NAME_HID10 S3_0_c15_c10_0
++#define ASR_NAME_EHID10 S3_0_c15_c10_1
++#define ASR_NAME_HID11 S3_0_c15_c11_0
++#define ASR_NAME_EHID11 S3_0_c15_c11_1
++#define ASR_NAME_HID13 S3_0_c15_c14_0
++#define ASR_NAME_HID14 S3_0_c15_c15_0
++#define ASR_NAME_HID16 S3_0_c15_c15_2
++#define ASR_NAME_PMCR0 S3_1_c15_c0_0
++#define ASR_NAME_PMCR1 S3_1_c15_c1_0
++#define ASR_NAME_PMCR2 S3_1_c15_c2_0
++#define ASR_NAME_PMCR3 S3_1_c15_c3_0
++#define ASR_NAME_PMCR4 S3_1_c15_c4_0
++#define ASR_NAME_PMESR0 S3_1_c15_c5_0
++#define ASR_NAME_PMESR1 S3_1_c15_c6_0
++#define ASR_NAME_OPMAT0 S3_1_c15_c7_0
++#define ASR_NAME_OPMAT1 S3_1_c15_c8_0
++#define ASR_NAME_OPMSK0 S3_1_c15_c9_0
++#define ASR_NAME_OPMSK1 S3_1_c15_c10_0
++#define ASR_NAME_PMSR S3_1_c15_c13_0
++#define ASR_NAME_PMC0 S3_2_c15_c0_0
++#define ASR_NAME_PMC1 S3_2_c15_c1_0
++#define ASR_NAME_PMC2 S3_2_c15_c2_0
++#define ASR_NAME_PMC3 S3_2_c15_c3_0
++#define ASR_NAME_PMC4 S3_2_c15_c4_0
++#define ASR_NAME_PMC5 S3_2_c15_c5_0
++#define ASR_NAME_PMC6 S3_2_c15_c6_0
++#define ASR_NAME_PMC7 S3_2_c15_c7_0
++#define ASR_NAME_PMC8 S3_2_c15_c9_0
++#define ASR_NAME_PMC9 S3_2_c15_c10_0
++#define ASR_NAME_PMTRHLD6 S3_2_c15_c12_0
++#define ASR_NAME_PMTRHLD4 S3_2_c15_c13_0
++#define ASR_NAME_PMTRHLD2 S3_2_c15_c14_0
++#define ASR_NAME_PMMMAP S3_2_c15_c15_0
++#define ASR_NAME_LSU_ERR_STS S3_3_c15_c0_0
++#define ASR_NAME_LSU_ERR_CTL S3_3_c15_c1_0
++#define ASR_NAME_E_LSU_ERR_STS S3_3_c15_c2_0
++#define ASR_NAME_L2_CRAMCONFIG S3_3_c15_c7_0
++#define ASR_NAME_LLC_ERR_STS S3_3_c15_c8_0
++#define ASR_NAME_L2E_ERR_STS S3_3_c15_c8_1
++#define ASR_NAME_LLC_ERR_ADR S3_3_c15_c9_0
++#define ASR_NAME_L2E_ERR_ADR S3_3_c15_c9_1
++#define ASR_NAME_LLC_ERR_INF S3_3_c15_c10_0
++#define ASR_NAME_L2E_ERR_INF S3_3_c15_c10_1
++#define ASR_NAME_FED_ERR_STS S3_4_c15_c0_0
++#define ASR_NAME_E_FED_ERR_STS S3_4_c15_c0_2
++#define ASR_NAME_APCTL_EL1_MIGSTS S3_4_c15_c0_4
++#define ASR_NAME_KERNELKEYLO_EL1 S3_4_c15_c1_0
++#define ASR_NAME_KERNELKEYHI_EL1 S3_4_c15_c1_1
++#define ASR_NAME_VMSA_LOCK_EL1 S3_4_c15_c1_2
++#define ASR_NAME_CTRR_B_UPR_EL1 S3_4_c15_c1_6
++#define ASR_NAME_CTRR_B_LWR_EL1 S3_4_c15_c1_7
++#define ASR_NAME_APRR_0 S3_4_c15_c2_0
++#define ASR_NAME_APRR_1 S3_4_c15_c2_1
++#define ASR_NAME_CTRR_LOCK S3_4_c15_c2_2
++#define ASR_NAME_CTRR_A_LWR_EL1 S3_4_c15_c2_3
++#define ASR_NAME_CTRR_A_UPR_EL1 S3_4_c15_c2_4
++#define ASR_NAME_CTRR_CTL_EL1 S3_4_c15_c2_5
++#define ASR_NAME_APRR_6 S3_4_c15_c2_6
++#define ASR_NAME_APRR_7 S3_4_c15_c2_7
++#define ASR_NAME_ACC_CTRR_A_LWR_EL2 S3_4_c15_c11_0
++#define ASR_NAME_ACC_CTRR_A_UPR_EL2 S3_4_c15_c11_1
++#define ASR_NAME_ACC_CTRR_CTL_EL2 S3_4_c15_c11_4
++#define ASR_NAME_ACC_CTRR_LOCK_EL2 S3_4_c15_c11_5
++#define ASR_NAME_IPI_RR_LOCAL S3_5_c15_c0_0
++#define ASR_NAME_IPI_RR_GLOBAL S3_5_c15_c0_1
++#define ASR_NAME_DPC_ERR_STS S3_5_c15_c0_5
++#define ASR_NAME_IPI_SR S3_5_c15_c1_1
++#define ASR_NAME_IPI_CR S3_5_c15_c3_1
++#define ASR_NAME_ACC_CFG_CYC_CFG S3_5_c15_c4_0
++#define ASR_NAME_CYC_OVRD S3_5_c15_c5_0
++#define ASR_NAME_ACC_OVRD S3_5_c15_c6_0
++#define ASR_NAME_ACC_EBLK_OVRD S3_5_c15_c6_1
++#define ASR_NAME_MMU_ERR_STS S3_6_c15_c0_0
++#define ASR_NAME_E_MMU_ERR_STS S3_6_c15_c2_0
++#define ASR_NAME_APSTS_EL1 S3_6_c15_c12_4
++#define ASR_NAME_UPMCR0 S3_7_c15_c0_4
++#define ASR_NAME_UPMC8 S3_7_c15_c0_5
++#define ASR_NAME_UPMESR0 S3_7_c15_c1_4
++#define ASR_NAME_UPMC9 S3_7_c15_c1_5
++#define ASR_NAME_UPMC10 S3_7_c15_c2_5
++#define ASR_NAME_UPMECM0 S3_7_c15_c3_4
++#define ASR_NAME_UPMC11 S3_7_c15_c3_5
++#define ASR_NAME_UPMECM1 S3_7_c15_c4_4
++#define ASR_NAME_UPMC12 S3_7_c15_c4_5
++#define ASR_NAME_UPMPCM S3_7_c15_c5_4
++#define ASR_NAME_UPMC13 S3_7_c15_c5_5
++#define ASR_NAME_UPMSR S3_7_c15_c6_4
++#define ASR_NAME_UPMC14 S3_7_c15_c6_5
++#define ASR_NAME_UPMC0 S3_7_c15_c7_4
++#define ASR_NAME_UPMC15 S3_7_c15_c7_5
++#define ASR_NAME_UPMC1 S3_7_c15_c8_4
++#define ASR_NAME_UPMECM2 S3_7_c15_c8_5
++#define ASR_NAME_UPMC2 S3_7_c15_c9_4
++#define ASR_NAME_UPMECM3 S3_7_c15_c9_5
++#define ASR_NAME_UPMC3 S3_7_c15_c10_4
++#define ASR_NAME_UPMC4 S3_7_c15_c11_4
++#define ASR_NAME_UPMESR1 S3_7_c15_c11_5
++#define ASR_NAME_UPMC5 S3_7_c15_c12_4
++#define ASR_NAME_UPMC6 S3_7_c15_c13_4
++#define ASR_NAME_UPMC7 S3_7_c15_c14_4
++#define ASR_NAME_UAOIMM S0_0_c4_c0_3
++#define ASR_NAME_PANIMM S0_0_c4_c0_4
++#define ASR_NAME_SPSELIMM S0_0_c4_c0_5
++#define ASR_NAME_SSBSIMM S0_3_c4_c0_1
++#define ASR_NAME_DITIMM S0_3_c4_c0_2
++#define ASR_NAME_DAIFSET S0_3_c4_c0_6
++#define ASR_NAME_DAIFCLR S0_3_c4_c0_7
++#define ASR_NAME_DCCSW S1_0_c7_c10_2
++#define ASR_NAME_DCCISW S1_0_c7_c14_2
++#define ASR_NAME_ICIALLUIS S1_0_c7_c1_0
++#define ASR_NAME_ICIALLU S1_0_c7_c5_0
++#define ASR_NAME_DCIVAC S1_0_c7_c6_1
++#define ASR_NAME_DCISW S1_0_c7_c6_2
++#define ASR_NAME_ATS1E1R S1_0_c7_c8_0
++#define ASR_NAME_ATS1E1W S1_0_c7_c8_1
++#define ASR_NAME_ATS1E0R S1_0_c7_c8_2
++#define ASR_NAME_ATS1E0W S1_0_c7_c8_3
++#define ASR_NAME_TLBIVMALLE1IS S1_0_c8_c3_0
++#define ASR_NAME_TLBIVAE1IS S1_0_c8_c3_1
++#define ASR_NAME_TLBIASIDE1IS S1_0_c8_c3_2
++#define ASR_NAME_TLBIVAAE1IS S1_0_c8_c3_3
++#define ASR_NAME_TLBIVALE1IS S1_0_c8_c3_5
++#define ASR_NAME_TLBIVAALE1IS S1_0_c8_c3_7
++#define ASR_NAME_TLBIVMALLE1 S1_0_c8_c7_0
++#define ASR_NAME_TLBIVAE1 S1_0_c8_c7_1
++#define ASR_NAME_TLBIASIDE1 S1_0_c8_c7_2
++#define ASR_NAME_TLBIVAAE1 S1_0_c8_c7_3
++#define ASR_NAME_TLBIVALE1 S1_0_c8_c7_5
++#define ASR_NAME_TLBIVAALE1 S1_0_c8_c7_7
++#define ASR_NAME_DCCVAC S1_3_c7_c10_1
++#define ASR_NAME_UAOIMM s0_0_c4_c0_3
++#define ASR_NAME_PANIMM s0_0_c4_c0_4
++#define ASR_NAME_SPSELIMM s0_0_c4_c0_5
++#define ASR_NAME_SSBSIMM s0_3_c4_c0_1
++#define ASR_NAME_DITIMM s0_3_c4_c0_2
++#define ASR_NAME_DAIFSET s0_3_c4_c0_6
++#define ASR_NAME_DAIFCLR s0_3_c4_c0_7
++#define ASR_NAME_DCCSW s1_0_c7_c10_2
++#define ASR_NAME_DCCISW s1_0_c7_c14_2
++#define ASR_NAME_ICIALLUIS s1_0_c7_c1_0
++#define ASR_NAME_ICIALLU s1_0_c7_c5_0
++#define ASR_NAME_DCIVAC s1_0_c7_c6_1
++#define ASR_NAME_DCISW s1_0_c7_c6_2
++#define ASR_NAME_ATS1E1R s1_0_c7_c8_0
++#define ASR_NAME_ATS1E1W s1_0_c7_c8_1
++#define ASR_NAME_ATS1E0R s1_0_c7_c8_2
++#define ASR_NAME_ATS1E0W s1_0_c7_c8_3
++#define ASR_NAME_TLBIVMALLE1IS s1_0_c8_c3_0
++#define ASR_NAME_TLBIVAE1IS s1_0_c8_c3_1
++#define ASR_NAME_TLBIASIDE1IS s1_0_c8_c3_2
++#define ASR_NAME_TLBIVAAE1IS s1_0_c8_c3_3
++#define ASR_NAME_TLBIVALE1IS s1_0_c8_c3_5
++#define ASR_NAME_TLBIVAALE1IS s1_0_c8_c3_7
++#define ASR_NAME_TLBIVMALLE1 s1_0_c8_c7_0
++#define ASR_NAME_TLBIVAE1 s1_0_c8_c7_1
++#define ASR_NAME_TLBIASIDE1 s1_0_c8_c7_2
++#define ASR_NAME_TLBIVAAE1 s1_0_c8_c7_3
++#define ASR_NAME_TLBIVALE1 s1_0_c8_c7_5
++#define ASR_NAME_TLBIVAALE1 s1_0_c8_c7_7
++#define ASR_NAME_DCCVAC s1_3_c7_c10_1
++#define ASR_NAME_DCCVAU s1_3_c7_c11_1
++#define ASR_NAME_DCCIVAC s1_3_c7_c14_1
++#define ASR_NAME_DCZVA s1_3_c7_c4_1
++#define ASR_NAME_ICIVAU s1_3_c7_c5_1
++#define ASR_NAME_ATS1E2R s1_4_c7_c8_0
++#define ASR_NAME_ATS1E2W s1_4_c7_c8_1
++#define ASR_NAME_ATS12E1R s1_4_c7_c8_4
++#define ASR_NAME_ATS12E1W s1_4_c7_c8_5
++#define ASR_NAME_ATS12E0R s1_4_c7_c8_6
++#define ASR_NAME_ATS12E0W s1_4_c7_c8_7
++#define ASR_NAME_TLBIIPAS2E1IS s1_4_c8_c0_1
++#define ASR_NAME_TLBIIPAS2LE1IS s1_4_c8_c0_5
++#define ASR_NAME_TLBIALLE2IS s1_4_c8_c3_0
++#define ASR_NAME_TLBIVAE2IS s1_4_c8_c3_1
++#define ASR_NAME_TLBIALLE1IS s1_4_c8_c3_4
++#define ASR_NAME_TLBIVALE2IS s1_4_c8_c3_5
++#define ASR_NAME_TLBIVMALLS12E1IS s1_4_c8_c3_6
++#define ASR_NAME_TLBIIPAS2E1 s1_4_c8_c4_1
++#define ASR_NAME_TLBIIPAS2LE1 s1_4_c8_c4_5
++#define ASR_NAME_TLBIALLE2 s1_4_c8_c7_0
++#define ASR_NAME_TLBIVAE2 s1_4_c8_c7_1
++#define ASR_NAME_TLBIALLE1 s1_4_c8_c7_4
++#define ASR_NAME_TLBIVALE2 s1_4_c8_c7_5
++#define ASR_NAME_TLBIVMALLS12E1 s1_4_c8_c7_6
++#define ASR_NAME_ATS1E3R s1_6_c7_c8_0
++#define ASR_NAME_ATS1E3W s1_6_c7_c8_1
++#define ASR_NAME_TLBIALLE3IS s1_6_c8_c3_0
++#define ASR_NAME_TLBIVAE3IS s1_6_c8_c3_1
++#define ASR_NAME_TLBIVALE3IS s1_6_c8_c3_5
++#define ASR_NAME_TLBIALLE3 s1_6_c8_c7_0
++#define ASR_NAME_TLBIVAE3 s1_6_c8_c7_1
++#define ASR_NAME_TLBIVALE3 s1_6_c8_c7_5
++#define ASR_NAME_OSDTRRX_EL1 s2_0_c0_c0_2
++#define ASR_NAME_DBGBVR0_EL1 s2_0_c0_c0_4
++#define ASR_NAME_DBGBCR0_EL1 s2_0_c0_c0_5
++#define ASR_NAME_DBGWVR0_EL1 s2_0_c0_c0_6
++#define ASR_NAME_DBGWCR0_EL1 s2_0_c0_c0_7
++#define ASR_NAME_DBGBVR10_EL1 s2_0_c0_c10_4
++#define ASR_NAME_DBGBCR10_EL1 s2_0_c0_c10_5
++#define ASR_NAME_DBGWVR10_EL1 s2_0_c0_c10_6
++#define ASR_NAME_DBGWCR10_EL1 s2_0_c0_c10_7
++#define ASR_NAME_DBGBVR11_EL1 s2_0_c0_c11_4
++#define ASR_NAME_DBGBCR11_EL1 s2_0_c0_c11_5
++#define ASR_NAME_DBGWVR11_EL1 s2_0_c0_c11_6
++#define ASR_NAME_DBGWCR11_EL1 s2_0_c0_c11_7
++#define ASR_NAME_DBGBVR12_EL1 s2_0_c0_c12_4
++#define ASR_NAME_DBGBCR12_EL1 s2_0_c0_c12_5
++#define ASR_NAME_DBGWVR12_EL1 s2_0_c0_c12_6
++#define ASR_NAME_DBGWCR12_EL1 s2_0_c0_c12_7
++#define ASR_NAME_DBGBVR13_EL1 s2_0_c0_c13_4
++#define ASR_NAME_DBGBCR13_EL1 s2_0_c0_c13_5
++#define ASR_NAME_DBGWVR13_EL1 s2_0_c0_c13_6
++#define ASR_NAME_DBGWCR13_EL1 s2_0_c0_c13_7
++#define ASR_NAME_DBGBVR14_EL1 s2_0_c0_c14_4
++#define ASR_NAME_DBGBCR14_EL1 s2_0_c0_c14_5
++#define ASR_NAME_DBGWVR14_EL1 s2_0_c0_c14_6
++#define ASR_NAME_DBGWCR14_EL1 s2_0_c0_c14_7
++#define ASR_NAME_DBGBVR15_EL1 s2_0_c0_c15_4
++#define ASR_NAME_DBGBCR15_EL1 s2_0_c0_c15_5
++#define ASR_NAME_DBGWVR15_EL1 s2_0_c0_c15_6
++#define ASR_NAME_DBGWCR15_EL1 s2_0_c0_c15_7
++#define ASR_NAME_DBGBVR1_EL1 s2_0_c0_c1_4
++#define ASR_NAME_DBGBCR1_EL1 s2_0_c0_c1_5
++#define ASR_NAME_DBGWVR1_EL1 s2_0_c0_c1_6
++#define ASR_NAME_DBGWCR1_EL1 s2_0_c0_c1_7
++#define ASR_NAME_MDCCINT_EL1 s2_0_c0_c2_0
++#define ASR_NAME_MDSCR_EL1 s2_0_c0_c2_2
++#define ASR_NAME_DBGBVR2_EL1 s2_0_c0_c2_4
++#define ASR_NAME_DBGBCR2_EL1 s2_0_c0_c2_5
++#define ASR_NAME_DBGWVR2_EL1 s2_0_c0_c2_6
++#define ASR_NAME_DBGWCR2_EL1 s2_0_c0_c2_7
++#define ASR_NAME_OSDTRTX_EL1 s2_0_c0_c3_2
++#define ASR_NAME_DBGBVR3_EL1 s2_0_c0_c3_4
++#define ASR_NAME_DBGBCR3_EL1 s2_0_c0_c3_5
++#define ASR_NAME_DBGWVR3_EL1 s2_0_c0_c3_6
++#define ASR_NAME_DBGWCR3_EL1 s2_0_c0_c3_7
++#define ASR_NAME_DBGBVR4_EL1 s2_0_c0_c4_4
++#define ASR_NAME_DBGBCR4_EL1 s2_0_c0_c4_5
++#define ASR_NAME_DBGWVR4_EL1 s2_0_c0_c4_6
++#define ASR_NAME_DBGWCR4_EL1 s2_0_c0_c4_7
++#define ASR_NAME_DBGBVR5_EL1 s2_0_c0_c5_4
++#define ASR_NAME_DBGBCR5_EL1 s2_0_c0_c5_5
++#define ASR_NAME_DBGWVR5_EL1 s2_0_c0_c5_6
++#define ASR_NAME_DBGWCR5_EL1 s2_0_c0_c5_7
++#define ASR_NAME_DBGWFAR s2_0_c0_c6_0
++#define ASR_NAME_OSECCR_EL1 s2_0_c0_c6_2
++#define ASR_NAME_DBGBVR6_EL1 s2_0_c0_c6_4
++#define ASR_NAME_DBGBCR6_EL1 s2_0_c0_c6_5
++#define ASR_NAME_DBGWVR6_EL1 s2_0_c0_c6_6
++#define ASR_NAME_DBGWCR6_EL1 s2_0_c0_c6_7
++#define ASR_NAME_DBGBVR7_EL1 s2_0_c0_c7_4
++#define ASR_NAME_DBGBCR7_EL1 s2_0_c0_c7_5
++#define ASR_NAME_DBGWVR7_EL1 s2_0_c0_c7_6
++#define ASR_NAME_DBGWCR7_EL1 s2_0_c0_c7_7
++#define ASR_NAME_DBGBVR8_EL1 s2_0_c0_c8_4
++#define ASR_NAME_DBGBCR8_EL1 s2_0_c0_c8_5
++#define ASR_NAME_DBGWVR8_EL1 s2_0_c0_c8_6
++#define ASR_NAME_DBGWCR8_EL1 s2_0_c0_c8_7
++#define ASR_NAME_DBGBVR9_EL1 s2_0_c0_c9_4
++#define ASR_NAME_DBGBCR9_EL1 s2_0_c0_c9_5
++#define ASR_NAME_DBGWVR9_EL1 s2_0_c0_c9_6
++#define ASR_NAME_DBGWCR9_EL1 s2_0_c0_c9_7
++#define ASR_NAME_MDRAR_EL1 s2_0_c1_c0_0
++#define ASR_NAME_OSLAR_EL1 s2_0_c1_c0_4
++#define ASR_NAME_OSLSR_EL1 s2_0_c1_c1_4
++#define ASR_NAME_OSDLR_EL1 s2_0_c1_c3_4
++#define ASR_NAME_DBGPRCR_EL1 s2_0_c1_c4_4
++#define ASR_NAME_DBGAUTHSTAT_EL1 s2_0_c7_c14_6
++#define ASR_NAME_DBGCLAIMSET_EL1 s2_0_c7_c8_6
++#define ASR_NAME_DBGCLAIMCLR_EL1 s2_0_c7_c9_6
++#define ASR_NAME_TEECR32_EL1 s2_2_c0_c0_0
++#define ASR_NAME_TEEHBR32_EL1 s2_2_c1_c0_0
++#define ASR_NAME_MDCCSR_EL0 s2_3_c0_c1_0
++#define ASR_NAME_MDDTR_EL0 s2_3_c0_c4_0
++#define ASR_NAME_MDDTRTX_EL0 s2_3_c0_c5_0
++#define ASR_NAME_DBGVCR32_EL2 s2_4_c0_c7_0
++#define ASR_NAME_MIDR_EL1 s3_0_c0_c0_0
++#define ASR_NAME_MPIDR_EL1 s3_0_c0_c0_5
++#define ASR_NAME_REVIDR_EL1 s3_0_c0_c0_6
++#define ASR_NAME_ID_PFR0_EL1 s3_0_c0_c1_0
++#define ASR_NAME_ID_PFR1_EL1 s3_0_c0_c1_1
++#define ASR_NAME_ID_DFR0_EL1 s3_0_c0_c1_2
++#define ASR_NAME_ID_AFR0_EL1 s3_0_c0_c1_3
++#define ASR_NAME_ID_MMFR0_EL1 s3_0_c0_c1_4
++#define ASR_NAME_ID_MMFR1_EL1 s3_0_c0_c1_5
++#define ASR_NAME_ID_MMFR2_EL1 s3_0_c0_c1_6
++#define ASR_NAME_ID_MMFR3_EL1 s3_0_c0_c1_7
++#define ASR_NAME_ID_ISAR0_EL1 s3_0_c0_c2_0
++#define ASR_NAME_ID_ISAR1_EL1 s3_0_c0_c2_1
++#define ASR_NAME_ID_ISAR2_EL1 s3_0_c0_c2_2
++#define ASR_NAME_ID_ISAR3_EL1 s3_0_c0_c2_3
++#define ASR_NAME_ID_ISAR4_EL1 s3_0_c0_c2_4
++#define ASR_NAME_ID_ISAR5_EL1 s3_0_c0_c2_5
++#define ASR_NAME_ID_MMFR4_EL1 s3_0_c0_c2_6
++#define ASR_NAME_ID_ISAR6_EL1 s3_0_c0_c2_7
++#define ASR_NAME_MVFR0_EL1 s3_0_c0_c3_0
++#define ASR_NAME_MVFR1_EL1 s3_0_c0_c3_1
++#define ASR_NAME_MVFR2_EL1 s3_0_c0_c3_2
++#define ASR_NAME_ID_AA32RES3_EL1 s3_0_c0_c3_3
++#define ASR_NAME_ID_PFR2_EL1 s3_0_c0_c3_4
++#define ASR_NAME_ID_AA32RES5_EL1 s3_0_c0_c3_5
++#define ASR_NAME_ID_AA32RES6_EL1 s3_0_c0_c3_6
++#define ASR_NAME_ID_AA32RES7_EL1 s3_0_c0_c3_7
++#define ASR_NAME_ID_AA64PFR0_EL1 s3_0_c0_c4_0
++#define ASR_NAME_ID_AA64PFR1_EL1 s3_0_c0_c4_1
++#define ASR_NAME_ID_AA64PFR2_EL1 s3_0_c0_c4_2
++#define ASR_NAME_ID_AA64PFR3_EL1 s3_0_c0_c4_3
++#define ASR_NAME_ID_AA64ZFR0_EL1 s3_0_c0_c4_4
++#define ASR_NAME_ID_AA64ZFR1_EL1 s3_0_c0_c4_5
++#define ASR_NAME_ID_AA64ZFR2_EL1 s3_0_c0_c4_6
++#define ASR_NAME_ID_AA64ZFR3_EL1 s3_0_c0_c4_7
++#define ASR_NAME_ID_AA64DFR0_EL1 s3_0_c0_c5_0
++#define ASR_NAME_ID_AA64DFR1_EL1 s3_0_c0_c5_1
++#define ASR_NAME_ID_AA64DFR2_EL1 s3_0_c0_c5_2
++#define ASR_NAME_ID_AA64DFR3_EL1 s3_0_c0_c5_3
++#define ASR_NAME_ID_AA64AFR0_EL1 s3_0_c0_c5_4
++#define ASR_NAME_ID_AA64AFR1_EL1 s3_0_c0_c5_5
++#define ASR_NAME_ID_AA64AFR2_EL1 s3_0_c0_c5_6
++#define ASR_NAME_ID_AA64AFR3_EL1 s3_0_c0_c5_7
++#define ASR_NAME_ID_AA64ISAR0_EL1 s3_0_c0_c6_0
++#define ASR_NAME_ID_AA64ISAR1_EL1 s3_0_c0_c6_1
++#define ASR_NAME_ID_AA64ISAR3_EL1 s3_0_c0_c6_3
++#define ASR_NAME_ID_AA64ISAR4_EL1 s3_0_c0_c6_4
++#define ASR_NAME_ID_AA64ISAR5_EL1 s3_0_c0_c6_5
++#define ASR_NAME_ID_AA64ISAR6_EL1 s3_0_c0_c6_6
++#define ASR_NAME_ID_AA64ISAR7_EL1 s3_0_c0_c6_7
++#define ASR_NAME_ID_AA64MMFR0_EL1 s3_0_c0_c7_0
++#define ASR_NAME_ID_AA64MMFR1_EL1 s3_0_c0_c7_1
++#define ASR_NAME_ID_AA64MMFR2_EL1 s3_0_c0_c7_2
++#define ASR_NAME_ID_AA64MMFR3_EL1 s3_0_c0_c7_3
++#define ASR_NAME_ID_AA64MMFR4_EL1 s3_0_c0_c7_4
++#define ASR_NAME_ID_AA64MMFR5_EL1 s3_0_c0_c7_5
++#define ASR_NAME_ID_AA64MMFR6_EL1 s3_0_c0_c7_6
++#define ASR_NAME_ID_AA64MMFR7_EL1 s3_0_c0_c7_7
++#define ASR_NAME_MAIR_EL21 s3_0_c10_c2_0
++#define ASR_NAME_AMAIR_EL21 s3_0_c10_c3_0
++#define ASR_NAME_LORSA_EL1 s3_0_c10_c4_0
++#define ASR_NAME_LOREA_EL1 s3_0_c10_c4_1
++#define ASR_NAME_LORN_EL1 s3_0_c10_c4_2
++#define ASR_NAME_LORC_EL1 s3_0_c10_c4_3
++#define ASR_NAME_LORID_EL1 s3_0_c10_c4_7
++#define ASR_NAME_VBAR_EL21 s3_0_c12_c0_0
++#define ASR_NAME_RVBAR_EL1 s3_0_c12_c0_1
++#define ASR_NAME_RMR_EL1 s3_0_c12_c0_2
++#define ASR_NAME_ICV_DIR_EL1 s3_0_c12_c11_1
++#define ASR_NAME_ICV_RPR_EL1 s3_0_c12_c11_3
++#define ASR_NAME_ICC_SGI1R_EL1 s3_0_c12_c11_5
++#define ASR_NAME_ICC_ASGI1R_EL1 s3_0_c12_c11_6
++#define ASR_NAME_ICC_SGI0R_EL1 s3_0_c12_c11_7
++#define ASR_NAME_ICV_IAR1_EL1 s3_0_c12_c12_0
++#define ASR_NAME_ICV_EOIR1_EL1 s3_0_c12_c12_1
++#define ASR_NAME_ICV_HPPIR1_EL1 s3_0_c12_c12_2
++#define ASR_NAME_ICV_BPR1_EL1 s3_0_c12_c12_3
++#define ASR_NAME_ICV_CTLR_EL1 s3_0_c12_c12_4
++#define ASR_NAME_ICC_SRE_EL1 s3_0_c12_c12_5
++#define ASR_NAME_ICV_IGRPEN0_EL1 s3_0_c12_c12_6
++#define ASR_NAME_ICV_IGRPEN1_EL1 s3_0_c12_c12_7
++#define ASR_NAME_ISR_EL1 s3_0_c12_c1_0
++#define ASR_NAME_DISR_EL1 s3_0_c12_c1_1
++#define ASR_NAME_ICV_IAR0_EL1 s3_0_c12_c8_0
++#define ASR_NAME_ICV_EOIR0_EL1 s3_0_c12_c8_1
++#define ASR_NAME_ICV_HPPIR0_EL1 s3_0_c12_c8_2
++#define ASR_NAME_ICV_BPR0_EL1 s3_0_c12_c8_3
++#define ASR_NAME_ICC_AP0R0_EL1 s3_0_c12_c8_4
++#define ASR_NAME_ICC_AP1R0_EL1 s3_0_c12_c9_0
++#define ASR_NAME_CONTEXTIDR_EL21 s3_0_c13_c0_1
++#define ASR_NAME_TPIDR_EL1 s3_0_c13_c0_4
++#define ASR_NAME_REDIR_CNTKCTL_EL1 s3_0_c14_c1_0
++#define ASR_NAME_HID0 s3_0_c15_c0_0
++#define ASR_NAME_HID25 s3_0_c15_c0_2
++#define ASR_NAME_HID26 s3_0_c15_c0_3
++#define ASR_NAME_HID27 s3_0_c15_c0_4
++#define ASR_NAME_HID28 s3_0_c15_c0_5
++#define ASR_NAME_HID29 s3_0_c15_c0_6
++#define ASR_NAME_HID10 s3_0_c15_c10_0
++#define ASR_NAME_BLOCK_CMAINT_CFG s3_0_c15_c10_2
++#define ASR_NAME_HID11 s3_0_c15_c11_0
++#define ASR_NAME_HID18 s3_0_c15_c11_2
++#define ASR_NAME_HID12 s3_0_c15_c12_0
++#define ASR_NAME_HID15 s3_0_c15_c12_1
++#define ASR_NAME_HID19 s3_0_c15_c12_2
++#define ASR_NAME_BIU_TLIMIT s3_0_c15_c13_0
++#define ASR_NAME_HID13 s3_0_c15_c14_0
++#define ASR_NAME_HID14 s3_0_c15_c15_0
++#define ASR_NAME_HID16 s3_0_c15_c15_2
++#define ASR_NAME_LLC_WRR2 s3_0_c15_c15_3
++#define ASR_NAME_HID17 s3_0_c15_c15_5
++#define ASR_NAME_HID24 s3_0_c15_c15_6
++#define ASR_NAME_HID1 s3_0_c15_c1_0
++#define ASR_NAME_HID21 s3_0_c15_c1_3
++#define ASR_NAME_HID22 s3_0_c15_c1_4
++#define ASR_NAME_HID23 s3_0_c15_c1_5
++#define ASR_NAME_HID2 s3_0_c15_c2_0
++#define ASR_NAME_HID3 s3_0_c15_c3_0
++#define ASR_NAME_HID4 s3_0_c15_c4_0
++#define ASR_NAME_HID5 s3_0_c15_c5_0
++#define ASR_NAME_HID6 s3_0_c15_c6_0
++#define ASR_NAME_HID7 s3_0_c15_c7_0
++#define ASR_NAME_HID8 s3_0_c15_c8_0
++#define ASR_NAME_HID9 s3_0_c15_c9_0
++#define ASR_NAME_SCTLR_EL21 s3_0_c1_c0_0
++#define ASR_NAME_ACTLR_EL21 s3_0_c1_c0_1
++#define ASR_NAME_CPTR_EL21 s3_0_c1_c0_2
++#define ASR_NAME_TTBR0_EL21 s3_0_c2_c0_0
++#define ASR_NAME_TTBR1_EL21 s3_0_c2_c0_1
++#define ASR_NAME_TCR_EL21 s3_0_c2_c0_2
++#define ASR_NAME_APIAKeyLo_EL21 s3_0_c2_c1_0
++#define ASR_NAME_APIAKeyHi_EL21 s3_0_c2_c1_1
++#define ASR_NAME_APIBKeyLo_EL21 s3_0_c2_c1_2
++#define ASR_NAME_APIBKeyHi_EL21 s3_0_c2_c1_3
++#define ASR_NAME_APDAKeyLo_EL21 s3_0_c2_c2_0
++#define ASR_NAME_APDAKeyHi_EL21 s3_0_c2_c2_1
++#define ASR_NAME_APDBKeyLo_EL21 s3_0_c2_c2_2
++#define ASR_NAME_APDBKeyHi_EL21 s3_0_c2_c2_3
++#define ASR_NAME_APGAKeyLo_EL21 s3_0_c2_c3_0
++#define ASR_NAME_APGAKeyHi_EL21 s3_0_c2_c3_1
++#define ASR_NAME_SPSR_EL21 s3_0_c4_c0_0
++#define ASR_NAME_ELR_EL21 s3_0_c4_c0_1
++#define ASR_NAME_SP_EL0 s3_0_c4_c1_0
++#define ASR_NAME_SPSEL s3_0_c4_c2_0
++#define ASR_NAME_NestedCurrentEL s3_0_c4_c2_2
++#define ASR_NAME_PAN s3_0_c4_c2_3
++#define ASR_NAME_UAO s3_0_c4_c2_4
++#define ASR_NAME_ICV_PMR_EL1 s3_0_c4_c6_0
++#define ASR_NAME_AFSR0_EL21 s3_0_c5_c1_0
++#define ASR_NAME_AFSR1_EL21 s3_0_c5_c1_1
++#define ASR_NAME_ESR_EL21 s3_0_c5_c2_0
++#define ASR_NAME_ERRIDR_EL1 s3_0_c5_c3_0
++#define ASR_NAME_FAR_EL21 s3_0_c6_c0_0
++#define ASR_NAME_PAR_EL1 s3_0_c7_c4_0
++#define ASR_NAME_CCSIDR_EL1 s3_1_c0_c0_0
++#define ASR_NAME_CLIDR_EL1 s3_1_c0_c0_1
++#define ASR_NAME_AIDR_EL1 s3_1_c0_c0_7
++#define ASR_NAME_PMCR0_EL1 s3_1_c15_c0_0
++#define ASR_NAME_APPL_CONTEXTPTR s3_1_c15_c0_1
++#define ASR_NAME_LD_LATPROF_CTL_EL21 s3_1_c15_c0_2
++#define ASR_NAME_AON_CPU_MSTALL_CTL01_EL1 s3_1_c15_c0_3
++#define ASR_NAME_PM_MEMFLT_CTL23_EL1 s3_1_c15_c0_4
++#define ASR_NAME_REDIR_ACNTV_CTL_EL0 s3_1_c15_c0_5
++#define ASR_NAME_LCL_ACNTVCTSS_NOREDIR_EL0 s3_1_c15_c0_6
++#define ASR_NAME_OPMSK1_EL1 s3_1_c15_c10_0
++#define ASR_NAME_LD_LATPROF_INF_EL2 s3_1_c15_c10_2
++#define ASR_NAME_AON_CPU_MSTALL_CTR2_EL1 s3_1_c15_c10_3
++#define ASR_NAME_REDIR_ACNTP_CVAL_EL0 s3_1_c15_c10_4
++#define ASR_NAME_CNTV_CVAL_NOREDIR_EL0 s3_1_c15_c10_5
++#define ASR_NAME_LCL_ACNTPCT_NOREDIR_EL0 s3_1_c15_c10_6
++#define ASR_NAME_PMCR_AFFINITY_EL1 s3_1_c15_c11_0
++#define ASR_NAME_AON_CPU_MSTALL_CTR3_EL1 s3_1_c15_c11_3
++#define ASR_NAME_REDIR_ACNTP_TVAL_EL0 s3_1_c15_c11_4
++#define ASR_NAME_CNTV_TVAL_NOREDIR_EL0 s3_1_c15_c11_5
++#define ASR_NAME_VMSA_HV_LOCK_EL2 s3_1_c15_c11_6
++#define ASR_NAME_PMSWCTRL_EL1 s3_1_c15_c12_0
++#define ASR_NAME_PMCR5_EL0 s3_1_c15_c12_1
++#define ASR_NAME_AON_CPU_MSTALL_CTR4_EL1 s3_1_c15_c12_3
++#define ASR_NAME_PMCompare0_EL1 s3_1_c15_c12_4
++#define ASR_NAME_PMCompare1_EL1 s3_1_c15_c12_5
++#define ASR_NAME_VMSA_NV_LOCK_EL2 s3_1_c15_c12_6
++#define ASR_NAME_PMSR_EL1 s3_1_c15_c13_0
++#define ASR_NAME_AON_CPU_MSTALL_CTR5_EL1 s3_1_c15_c13_3
++#define ASR_NAME_REDIR_ACNTP_CTL_EL0 s3_1_c15_c13_4
++#define ASR_NAME_PMCompare5_EL1 s3_1_c15_c13_5
++#define ASR_NAME_PMCompare6_EL1 s3_1_c15_c13_6
++#define ASR_NAME_PMCompare7_EL1 s3_1_c15_c13_7
++#define ASR_NAME_PMCR_BVRNG4_EL1 s3_1_c15_c14_0
++#define ASR_NAME_PM_PMI_PC s3_1_c15_c14_1
++#define ASR_NAME_AON_CPU_MSTALL_CTR6_EL1 s3_1_c15_c14_3
++#define ASR_NAME_REDIR_ACNTV_CVAL_EL0 s3_1_c15_c14_4
++#define ASR_NAME_LCL_ACNTVCT_NOREDIR_EL0 s3_1_c15_c14_5
++#define ASR_NAME_PMCR_BVRNG5_EL1 s3_1_c15_c15_0
++#define ASR_NAME_AON_CPU_MSTALL_CTR7_EL1 s3_1_c15_c15_3
++#define ASR_NAME_REDIR_ACNTV_TVAL_EL0 s3_1_c15_c15_4
++#define ASR_NAME_LCL_ACNTPCTSS_NOREDIR_EL0 s3_1_c15_c15_5
++#define ASR_NAME_PMCR1_EL21 s3_1_c15_c1_0
++#define ASR_NAME_LD_LATPROF_CTR_EL1 s3_1_c15_c1_2
++#define ASR_NAME_AON_CPU_MSTALL_CTL23_EL1 s3_1_c15_c1_3
++#define ASR_NAME_PM_MEMFLT_CTL45_EL1 s3_1_c15_c1_4
++#define ASR_NAME_ACNTRDIR_EL21 s3_1_c15_c1_5
++#define ASR_NAME_ACNTKCTL_NOREDIR_EL1 s3_1_c15_c1_6
++#define ASR_NAME_PMCR2_EL1 s3_1_c15_c2_0
++#define ASR_NAME_LD_LATPROF_STS_EL1 s3_1_c15_c2_2
++#define ASR_NAME_AON_CPU_MSTALL_CTL45_EL1 s3_1_c15_c2_3
++#define ASR_NAME_REDIR_ACNTHP_CVAL_EL2 s3_1_c15_c2_4
++#define ASR_NAME_LCL_CNTVCT_NOREDIR_EL0 s3_1_c15_c2_5
++#define ASR_NAME_ACNTP_CVAL_NOREDIR_EL0 s3_1_c15_c2_6
++#define ASR_NAME_PMCR3_EL1 s3_1_c15_c3_0
++#define ASR_NAME_LD_LATPROF_INF_EL1 s3_1_c15_c3_2
++#define ASR_NAME_AON_CPU_MSTALL_CTL67_EL1 s3_1_c15_c3_3
++#define ASR_NAME_REDIR_ACNTHP_TVAL_EL2 s3_1_c15_c3_4
++#define ASR_NAME_LCL_CNTPCTSS_NOREDIR_EL0 s3_1_c15_c3_5
++#define ASR_NAME_ACNTP_TVAL_NOREDIR_EL0 s3_1_c15_c3_6
++#define ASR_NAME_PMCR4_EL1 s3_1_c15_c4_0
++#define ASR_NAME_LD_LATPROF_CTL_EL2 s3_1_c15_c4_2
++#define ASR_NAME_AON_CPU_MEMFLT_CTL01_EL1 s3_1_c15_c4_3
++#define ASR_NAME_REDIR_ACNTHP_CTL_EL2 s3_1_c15_c4_4
++#define ASR_NAME_LCL_CNTVCTSS_NOREDIR_EL0 s3_1_c15_c4_5
++#define ASR_NAME_ACNTP_CTL_NOREDIR_EL0 s3_1_c15_c4_6
++#define ASR_NAME_PMESR0_EL1 s3_1_c15_c5_0
++#define ASR_NAME_LD_LATPROF_CMD_EL1 s3_1_c15_c5_2
++#define ASR_NAME_AON_CPU_MEMFLT_CTL23_EL1 s3_1_c15_c5_3
++#define ASR_NAME_REDIR_ACNTHV_CVAL_EL2 s3_1_c15_c5_4
++#define ASR_NAME_ACNTV_CVAL_NOREDIR_EL0 s3_1_c15_c5_6
++#define ASR_NAME_PMESR1_EL1 s3_1_c15_c6_0
++#define ASR_NAME_PMCR1_EL2 s3_1_c15_c6_2
++#define ASR_NAME_AON_CPU_MEMFLT_CTL45_EL1 s3_1_c15_c6_3
++#define ASR_NAME_REDIR_ACNTHV_TVAL_EL2 s3_1_c15_c6_4
++#define ASR_NAME_CNTKCTL_NOREDIR_EL1 s3_1_c15_c6_5
++#define ASR_NAME_ACNTV_TVAL_NOREDIR_EL0 s3_1_c15_c6_6
++#define ASR_NAME_OPMAT0_EL1 s3_1_c15_c7_0
++#define ASR_NAME_PMCR1_EL12 s3_1_c15_c7_2
++#define ASR_NAME_PMCR1_EL1 ASR_NAME_PMCR1_EL12
++#define ASR_NAME_PMCR1_EL2 ASR_NAME_PMCR1_EL12
++#define ASR_NAME_AON_CPU_MEMFLT_CTL67_EL1 s3_1_c15_c7_3
++#define ASR_NAME_REDIR_ACNTHV_CTL_EL2 s3_1_c15_c7_4
++#define ASR_NAME_CNTP_CVAL_NOREDIR_EL0 s3_1_c15_c7_5
++#define ASR_NAME_ACNTV_CTL_NOREDIR_EL0 s3_1_c15_c7_6
++#define ASR_NAME_OPMAT1_EL1 s3_1_c15_c8_0
++#define ASR_NAME_PMCR1_GL12 s3_1_c15_c8_2
++#define ASR_NAME_AON_CPU_MSTALL_CTR0_EL1 s3_1_c15_c8_3
++#define ASR_NAME_REDIR_ACNTFRQ_EL0 s3_1_c15_c8_4
++#define ASR_NAME_CNTP_TVAL_NOREDIR_EL0 s3_1_c15_c8_5
++#define ASR_NAME_LCL_CNTPCT_NOREDIR_EL0 s3_1_c15_c8_6
++#define ASR_NAME_OPMSK0_EL1 s3_1_c15_c9_0
++#define ASR_NAME_LD_LATPROF_CTL_EL12 s3_1_c15_c9_2
++#define ASR_NAME_AON_CPU_MSTALL_CTR1_EL1 s3_1_c15_c9_3
++#define ASR_NAME_ACNTVOFF_EL2 s3_1_c15_c9_4
++#define ASR_NAME_CNTP_CTL_NOREDIR_EL0 s3_1_c15_c9_5
++#define ASR_NAME_CNTV_CTL_NOREDIR_EL0 s3_1_c15_c9_6
++#define ASR_NAME_CSSELR_EL1 s3_2_c0_c0_0
++#define ASR_NAME_PMC0 s3_2_c15_c0_0
++#define ASR_NAME_UPMCFILTER0 s3_2_c15_c0_1
++#define ASR_NAME_UPMCFILTER1 s3_2_c15_c0_2
++#define ASR_NAME_UPMCFILTER2 s3_2_c15_c0_3
++#define ASR_NAME_UPMCFILTER3 s3_2_c15_c0_4
++#define ASR_NAME_UPMCFILTER4 s3_2_c15_c0_5
++#define ASR_NAME_UPMCFILTER5 s3_2_c15_c0_6
++#define ASR_NAME_UPMCFILTER6 s3_2_c15_c0_7
++#define ASR_NAME_PMC9 s3_2_c15_c10_0
++#define ASR_NAME_PMTRHLD6_EL1 s3_2_c15_c12_0
++#define ASR_NAME_PMTRHLD4_EL1 s3_2_c15_c13_0
++#define ASR_NAME_PMTRHLD2_EL1 s3_2_c15_c14_0
++#define ASR_NAME_PMMMAP_EL1 s3_2_c15_c15_0
++#define ASR_NAME_PMC1 s3_2_c15_c1_0
++#define ASR_NAME_UPMCFILTER7 s3_2_c15_c1_1
++#define ASR_NAME_PMC2 s3_2_c15_c2_0
++#define ASR_NAME_PMC3 s3_2_c15_c3_0
++#define ASR_NAME_PMC4 s3_2_c15_c4_0
++#define ASR_NAME_PMC5 s3_2_c15_c5_0
++#define ASR_NAME_PMC6 s3_2_c15_c6_0
++#define ASR_NAME_PMC7 s3_2_c15_c7_0
++#define ASR_NAME_PMC8 s3_2_c15_c9_0
++#define ASR_NAME_CTR_EL0 s3_3_c0_c0_1
++#define ASR_NAME_DCZID_EL0 s3_3_c0_c0_7
++#define ASR_NAME_TPIDR_EL0 s3_3_c13_c0_2
++#define ASR_NAME_TPIDRRO_EL0 s3_3_c13_c0_3
++#define ASR_NAME_REDIR_CNTFRQ_EL0 s3_3_c14_c0_0
++#define ASR_NAME_REDIR_LCL_CNTPCT_EL0 s3_3_c14_c0_1
++#define ASR_NAME_REDIR_LCL_CNTVCT_EL0 s3_3_c14_c0_2
++#define ASR_NAME_REDIR_LCL_CNTPCTSS_EL0 s3_3_c14_c0_5
++#define ASR_NAME_REDIR_LCL_CNTVCTSS_EL0 s3_3_c14_c0_6
++#define ASR_NAME_REDIR_CNTP_TVAL_EL0 s3_3_c14_c2_0
++#define ASR_NAME_REDIR_CNTP_CTL_EL0 s3_3_c14_c2_1
++#define ASR_NAME_REDIR_CNTP_CVAL_EL0 s3_3_c14_c2_2
++#define ASR_NAME_REDIR_CNTV_TVAL_EL0 s3_3_c14_c3_0
++#define ASR_NAME_REDIR_CNTV_CTL_EL0 s3_3_c14_c3_1
++#define ASR_NAME_REDIR_CNTV_CVAL_EL0 s3_3_c14_c3_2
++#define ASR_NAME_LSU_ERR_STS s3_3_c15_c0_0
++#define ASR_NAME_AFLATCTL1_EL1 s3_3_c15_c0_4
++#define ASR_NAME_AFLATVALBIN0_EL1 s3_3_c15_c0_5
++#define ASR_NAME_AFLATINFLO_EL1 s3_3_c15_c0_6
++#define ASR_NAME_LLC_ERR_INF s3_3_c15_c10_0
++#define ASR_NAME_USERTAGSEL_EL1 s3_3_c15_c10_1
++#define ASR_NAME_UUSERTAG_EL0 s3_3_c15_c10_2
++#define ASR_NAME_KUSERTAG_EL1 s3_3_c15_c10_3
++#define ASR_NAME_HUSERTAG_EL2 s3_3_c15_c10_4
++#define ASR_NAME_LLC_TRACE_CTL0 s3_3_c15_c11_0
++#define ASR_NAME_LLC_TRACE_CTL1 s3_3_c15_c12_0
++#define ASR_NAME_LLC_UP_REQ_VC s3_3_c15_c13_0
++#define ASR_NAME_LLC_UP_REQ_VC_THRESH s3_3_c15_c13_1
++#define ASR_NAME_LLC_UP_REQ_VC_2 s3_3_c15_c13_2
++#define ASR_NAME_LLC_UP_REQ_VC_THRESH_2 s3_3_c15_c13_3
++#define ASR_NAME_LLC_DRAM_HASH0 s3_3_c15_c13_4
++#define ASR_NAME_LLC_DRAM_HASH1 s3_3_c15_c13_5
++#define ASR_NAME_LLC_DRAM_HASH2 s3_3_c15_c13_6
++#define ASR_NAME_LLC_DRAM_HASH3 s3_3_c15_c13_7
++#define ASR_NAME_LLC_TRACE_CTL2 s3_3_c15_c14_0
++#define ASR_NAME_LLC_HASH0 s3_3_c15_c15_0
++#define ASR_NAME_LLC_HASH1 s3_3_c15_c15_1
++#define ASR_NAME_LLC_HASH2 s3_3_c15_c15_2
++#define ASR_NAME_LLC_HASH3 s3_3_c15_c15_3
++#define ASR_NAME_LLC_WRR s3_3_c15_c15_4
++#define ASR_NAME_LSU_ERR_CTL s3_3_c15_c1_0
++#define ASR_NAME_AFLATCTL2_EL1 s3_3_c15_c1_4
++#define ASR_NAME_AFLATVALBIN1_EL1 s3_3_c15_c1_5
++#define ASR_NAME_AFLATINFHI_EL1 s3_3_c15_c1_6
++#define ASR_NAME_AFLATCTL3_EL1 s3_3_c15_c2_4
++#define ASR_NAME_AFLATVALBIN2_EL1 s3_3_c15_c2_5
++#define ASR_NAME_AFLATCTL4_EL1 s3_3_c15_c3_4
++#define ASR_NAME_AFLATVALBIN3_EL1 s3_3_c15_c3_5
++#define ASR_NAME_LLC_FILL_CTL s3_3_c15_c4_0
++#define ASR_NAME_AFLATCTL5_LO_EL1 s3_3_c15_c4_4
++#define ASR_NAME_AFLATVALBIN4_EL1 s3_3_c15_c4_5
++#define ASR_NAME_AFLATCTL5_HI_EL1 s3_3_c15_c4_6
++#define ASR_NAME_LLC_FILL_DAT s3_3_c15_c5_0
++#define ASR_NAME_AFLATVALBIN5_EL1 s3_3_c15_c5_5
++#define ASR_NAME_AFLATVALBIN6_EL1 s3_3_c15_c6_5
++#define ASR_NAME_LLC_RAM_CONFIG s3_3_c15_c7_0
++#define ASR_NAME_AFLATVALBIN7_EL1 s3_3_c15_c7_5
++#define ASR_NAME_LLC_ERR_STS s3_3_c15_c8_0
++#define ASR_NAME_CMAINT_BCAST_LIST_0 s3_3_c15_c8_1
++#define ASR_NAME_CMAINT_BCAST_LIST_1 s3_3_c15_c8_2
++#define ASR_NAME_CMAINT_BCAST_CTL s3_3_c15_c8_3
++#define ASR_NAME_LLC_ERR_ADR s3_3_c15_c9_0
++#define ASR_NAME_LLC_ERR_CTL s3_3_c15_c9_1
++#define ASR_NAME_LLC_ERR_INJ s3_3_c15_c9_2
++#define ASR_NAME_NZCV s3_3_c4_c2_0
++#define ASR_NAME_DAIF s3_3_c4_c2_1
++#define ASR_NAME_DIT s3_3_c4_c2_5
++#define ASR_NAME_SSBS s3_3_c4_c2_6
++#define ASR_NAME_FPCR s3_3_c4_c4_0
++#define ASR_NAME_FPSR s3_3_c4_c4_1
++#define ASR_NAME_DSPSR_EL0 s3_3_c4_c5_0
++#define ASR_NAME_DLR_EL0 s3_3_c4_c5_1
++#define ASR_NAME_VPIDR_EL2 s3_4_c0_c0_0
++#define ASR_NAME_VMPIDR_EL2 s3_4_c0_c0_5
++#define ASR_NAME_MAIR_EL2 s3_4_c10_c2_0
++#define ASR_NAME_AMAIR_EL2 s3_4_c10_c3_0
++#define ASR_NAME_VBAR_EL2 s3_4_c12_c0_0
++#define ASR_NAME_RVBAR_EL2 s3_4_c12_c0_1
++#define ASR_NAME_RMR_EL2 s3_4_c12_c0_2
++#define ASR_NAME_ICH_HCR_EL2 s3_4_c12_c11_0
++#define ASR_NAME_ICH_VTR_EL2 s3_4_c12_c11_1
++#define ASR_NAME_ICH_MISR_EL2 s3_4_c12_c11_2
++#define ASR_NAME_ICH_EISR_EL2 s3_4_c12_c11_3
++#define ASR_NAME_ICH_ELRSR_EL2 s3_4_c12_c11_5
++#define ASR_NAME_ICH_VMCR_EL2 s3_4_c12_c11_7
++#define ASR_NAME_ICH_LR0_EL2 s3_4_c12_c12_0
++#define ASR_NAME_ICH_LR1_EL2 s3_4_c12_c12_1
++#define ASR_NAME_ICH_LR2_EL2 s3_4_c12_c12_2
++#define ASR_NAME_ICH_LR3_EL2 s3_4_c12_c12_3
++#define ASR_NAME_ICH_LR4_EL2 s3_4_c12_c12_4
++#define ASR_NAME_ICH_LR5_EL2 s3_4_c12_c12_5
++#define ASR_NAME_ICH_LR6_EL2 s3_4_c12_c12_6
++#define ASR_NAME_ICH_LR7_EL2 s3_4_c12_c12_7
++#define ASR_NAME_VDISR_EL2 s3_4_c12_c1_1
++#define ASR_NAME_ICH_AP0R0_EL2 s3_4_c12_c8_0
++#define ASR_NAME_ICH_AP1R0_EL2 s3_4_c12_c9_0
++#define ASR_NAME_ICC_SRE_EL2 s3_4_c12_c9_5
++#define ASR_NAME_CONTEXTIDR_EL2 s3_4_c13_c0_1
++#define ASR_NAME_TPIDR_EL2 s3_4_c13_c0_2
++#define ASR_NAME_CNTVOFF_EL2 s3_4_c14_c0_3
++#define ASR_NAME_REDIR_CNTHCTL_EL2 s3_4_c14_c1_0
++#define ASR_NAME_REDIR_CNTHP_TVAL_EL2 s3_4_c14_c2_0
++#define ASR_NAME_REDIR_CNTHP_CTL_EL2 s3_4_c14_c2_1
++#define ASR_NAME_REDIR_CNTHP_CVAL_EL2 s3_4_c14_c2_2
++#define ASR_NAME_REDIR_CNTHV_TVAL_EL2 s3_4_c14_c3_0
++#define ASR_NAME_REDIR_CNTHV_CTL_EL2 s3_4_c14_c3_1
++#define ASR_NAME_REDIR_CNTHV_CVAL_EL2 s3_4_c14_c3_2
++#define ASR_NAME_FED_ERR_STS s3_4_c15_c0_0
++#define ASR_NAME_FED_ERR_CTL s3_4_c15_c0_1
++#define ASR_NAME_APCTL_EL21 s3_4_c15_c0_4
++#define ASR_NAME_IMPL_MSR_RO_CTRL0_EL21 s3_4_c15_c0_5
++#define ASR_NAME_IMPL_MSR_RO_CTRL0_EL2 s3_4_c15_c0_7
++#define ASR_NAME_PREDAKEYLo_EL1 s3_4_c15_c10_0
++#define ASR_NAME_PREDAKEYHi_EL1 s3_4_c15_c10_1
++#define ASR_NAME_PREDBKEYLo_EL1 s3_4_c15_c10_2
++#define ASR_NAME_PREDBKEYHi_EL1 s3_4_c15_c10_3
++#define ASR_NAME_SIQ_CFG_EL1 s3_4_c15_c10_4
++#define ASR_NAME_REDIR_LCL_ACNTPCTSS_EL0 s3_4_c15_c10_5
++#define ASR_NAME_REDIR_LCL_ACNTVCTSS_EL0 s3_4_c15_c10_6
++#define ASR_NAME_AVNCR_EL2 s3_4_c15_c10_7
++#define ASR_NAME_ACC_CTRR_A_LWR_EL2 s3_4_c15_c11_0
++#define ASR_NAME_ACC_CTRR_A_UPR_EL2 s3_4_c15_c11_1
++#define ASR_NAME_ACC_CTRR_B_LWR_EL2 s3_4_c15_c11_2
++#define ASR_NAME_ACC_CTRR_B_UPR_EL2 s3_4_c15_c11_3
++#define ASR_NAME_ACC_CTRR_CTL_EL2 s3_4_c15_c11_4
++#define ASR_NAME_ACC_CTRR_LOCK_EL2 s3_4_c15_c11_5
++#define ASR_NAME_REDIR_LCL_ACNTPCT_EL0 s3_4_c15_c11_6
++#define ASR_NAME_REDIR_LCL_ACNTVCT_EL0 s3_4_c15_c11_7
++#define ASR_NAME_ACFG_EL1 s3_4_c15_c12_0
++#define ASR_NAME_AHCR_EL2 s3_4_c15_c12_1
++#define ASR_NAME_APL_INTSTATUS_EL21 s3_4_c15_c12_2
++#define ASR_NAME_APL_INTSTATUS_EL2 s3_4_c15_c12_3
++#define ASR_NAME_IMPL_MSR_LOCK_EL21 s3_4_c15_c12_5
++#define ASR_NAME_REDIR_ACNTHCTL_EL2 s3_4_c15_c12_6
++#define ASR_NAME_IMPL_MSR_LOCK_EL2 s3_4_c15_c12_7
++#define ASR_NAME_JAPIAKeyLo_EL2 s3_4_c15_c13_0
++#define ASR_NAME_JAPIAKeyHi_EL2 s3_4_c15_c13_1
++#define ASR_NAME_JAPIBKeyLo_EL2 s3_4_c15_c13_2
++#define ASR_NAME_JAPIBKeyHi_EL2 s3_4_c15_c13_3
++#define ASR_NAME_JAPIAKeyLo_EL21 s3_4_c15_c13_4
++#define ASR_NAME_JAPIAKeyHi_EL21 s3_4_c15_c13_5
++#define ASR_NAME_JAPIBKeyLo_EL21 s3_4_c15_c13_6
++#define ASR_NAME_JAPIBKeyHi_EL21 s3_4_c15_c13_7
++#define ASR_NAME_JAPIAKeyLo_EL12 s3_4_c15_c14_0
++#define ASR_NAME_JAPIAKeyHi_EL12 s3_4_c15_c14_1
++#define ASR_NAME_JAPIBKeyLo_EL12 s3_4_c15_c14_2
++#define ASR_NAME_JAPIBKeyHi_EL12 s3_4_c15_c14_3
++#define ASR_NAME_ACNTRDIR_EL2 s3_4_c15_c14_5
++#define ASR_NAME_ACNTRDIR_EL12 s3_4_c15_c14_6
++#define ASR_NAME_JRANGE_EL2 s3_4_c15_c15_0
++#define ASR_NAME_JRANGE_EL21 s3_4_c15_c15_1
++#define ASR_NAME_JRANGE_EL12 s3_4_c15_c15_2
++#define ASR_NAME_JCTL_EL2 s3_4_c15_c15_3
++#define ASR_NAME_JCTL_EL21 s3_4_c15_c15_4
++#define ASR_NAME_JCTL_EL12 s3_4_c15_c15_5
++#define ASR_NAME_JCTL_EL0 s3_4_c15_c15_6
++#define ASR_NAME_AMDSCR_EL1 s3_4_c15_c15_7
++#define ASR_NAME_KERNKEYLo_EL21 s3_4_c15_c1_0
++#define ASR_NAME_KERNKEYHi_EL21 s3_4_c15_c1_1
++#define ASR_NAME_VMSA_LOCK_EL1 s3_4_c15_c1_2
++#define ASR_NAME_AMX_STATE_T_EL1 s3_4_c15_c1_3
++#define ASR_NAME_AMX_CONFIG_EL21 s3_4_c15_c1_4
++#define ASR_NAME_VMSA_LOCK_EL2 s3_4_c15_c1_5
++#define ASR_NAME_CTRR_B_UPR_EL21 s3_4_c15_c1_6
++#define ASR_NAME_CTRR_B_LWR_EL21 s3_4_c15_c1_7
++#define ASR_NAME_SP_SETUP_GL21 s3_4_c15_c2_0
++#define ASR_NAME_SP_SETUP_GL2 s3_4_c15_c2_1
++#define ASR_NAME_CTRR_LOCK_EL21 s3_4_c15_c2_2
++#define ASR_NAME_CTRR_A_LWR_EL21 s3_4_c15_c2_3
++#define ASR_NAME_CTRR_A_UPR_EL21 s3_4_c15_c2_4
++#define ASR_NAME_CTRR_CTL_EL21 s3_4_c15_c2_5
++#define ASR_NAME_VMSA_LOCK_EL12 s3_4_c15_c2_6
++#define ASR_NAME_ACNTV_CTL_EL02 s3_4_c15_c2_7
++#define ASR_NAME_AMX_STATE_C0_EL1 s3_4_c15_c3_0
++#define ASR_NAME_AMX_STATE_C1_EL1 s3_4_c15_c3_1
++#define ASR_NAME_AMX_STATE_C2_EL1 s3_4_c15_c3_2
++#define ASR_NAME_AMX_STATE_C3_EL1 s3_4_c15_c3_3
++#define ASR_NAME_AMX_STATUS_C0_EL1 s3_4_c15_c3_4
++#define ASR_NAME_AMX_STATUS_C1_EL1 s3_4_c15_c3_5
++#define ASR_NAME_AMX_STATUS_C2_EL1 s3_4_c15_c3_6
++#define ASR_NAME_AMX_STATUS_C3_EL1 s3_4_c15_c3_7
++#define ASR_NAME_AMX_NUMCTXT_EL1 s3_4_c15_c4_0
++#define ASR_NAME_ACNTP_CVAL_EL02 s3_4_c15_c4_1
++#define ASR_NAME_REDIR_ACNTP_TVAL_EL02 s3_4_c15_c4_2
++#define ASR_NAME_ACNTP_CTL_EL02 s3_4_c15_c4_3
++#define ASR_NAME_ACNTV_CVAL_EL02 s3_4_c15_c4_4
++#define ASR_NAME_ACNTV_TVAL_EL02 s3_4_c15_c4_5
++#define ASR_NAME_AMX_CONFIG_EL12 s3_4_c15_c4_6
++#define ASR_NAME_AMX_CONFIG_EL2 s3_4_c15_c4_7
++#define ASR_NAME_AMX_CONTEXT_EL1 s3_4_c15_c5_0
++#define ASR_NAME_SPRR_HUPERM_EL0 s3_4_c15_c5_1
++#define ASR_NAME_SPRR_VUPERM_EL0 s3_4_c15_c5_2
++#define ASR_NAME_AMX_PRIORITY_C0_EL1 s3_4_c15_c5_6
++#define ASR_NAME_AMX_PRIORITY_C1_EL1 s3_4_c15_c5_7
++#define ASR_NAME_AMX_PRIORITY_C2_EL1 s3_4_c15_c6_0
++#define ASR_NAME_AMX_PRIORITY_C3_EL1 s3_4_c15_c6_1
++#define ASR_NAME_CTRR_CTL_EL2 s3_4_c15_c6_2
++#define ASR_NAME_CTRR_LOCK_EL2 s3_4_c15_c6_3
++#define ASR_NAME_CTRR_A_LWR_EL2 s3_4_c15_c6_4
++#define ASR_NAME_CTRR_A_UPR_EL2 s3_4_c15_c6_5
++#define ASR_NAME_CTRR_B_LWR_EL2 s3_4_c15_c6_6
++#define ASR_NAME_CTRR_B_UPR_EL2 s3_4_c15_c6_7
++#define ASR_NAME_SPRR_HUMPRR_EL2 s3_4_c15_c7_0
++#define ASR_NAME_SPRR_HUPERM_SH01_EL2 s3_4_c15_c7_1
++#define ASR_NAME_SPRR_HUPERM_SH02_EL2 s3_4_c15_c7_2
++#define ASR_NAME_SPRR_HUPERM_SH03_EL2 s3_4_c15_c7_3
++#define ASR_NAME_SPRR_HUPERM_SH04_EL2 s3_4_c15_c7_4
++#define ASR_NAME_SPRR_HUPERM_SH05_EL2 s3_4_c15_c7_5
++#define ASR_NAME_SPRR_HUPERM_SH06_EL2 s3_4_c15_c7_6
++#define ASR_NAME_SPRR_HUPERM_SH07_EL2 s3_4_c15_c7_7
++#define ASR_NAME_SPRR_VUMPRR_EL1 s3_4_c15_c8_0
++#define ASR_NAME_SPRR_VUPERM_SH01_EL1 s3_4_c15_c8_1
++#define ASR_NAME_SPRR_VUPERM_SH02_EL1 s3_4_c15_c8_2
++#define ASR_NAME_SPRR_VUPERM_SH03_EL1 s3_4_c15_c8_3
++#define ASR_NAME_SPRR_VUPERM_SH04_EL1 s3_4_c15_c8_4
++#define ASR_NAME_SPRR_VUPERM_SH05_EL1 s3_4_c15_c8_5
++#define ASR_NAME_SPRR_VUPERM_SH06_EL1 s3_4_c15_c8_6
++#define ASR_NAME_SPRR_VUPERM_SH07_EL1 s3_4_c15_c8_7
++#define ASR_NAME_CTRR_A_LWR_EL12 s3_4_c15_c9_0
++#define ASR_NAME_CTRR_A_UPR_EL12 s3_4_c15_c9_1
++#define ASR_NAME_CTRR_B_LWR_EL12 s3_4_c15_c9_2
++#define ASR_NAME_CTRR_B_UPR_EL12 s3_4_c15_c9_3
++#define ASR_NAME_CTRR_CTL_EL12 s3_4_c15_c9_4
++#define ASR_NAME_CTRR_LOCK_EL12 s3_4_c15_c9_5
++#define ASR_NAME_REDIR_ACNTKCTL_EL1 s3_4_c15_c9_6
++#define ASR_NAME_ACNTKCTL_EL12 s3_4_c15_c9_7
++#define ASR_NAME_SCTLR_EL2 s3_4_c1_c0_0
++#define ASR_NAME_ACTLR_EL2 s3_4_c1_c0_1
++#define ASR_NAME_HCR_EL2 s3_4_c1_c1_0
++#define ASR_NAME_MDCR_EL2 s3_4_c1_c1_1
++#define ASR_NAME_CPTR_EL2 s3_4_c1_c1_2
++#define ASR_NAME_HSTR_EL2 s3_4_c1_c1_3
++#define ASR_NAME_HFGRTR_EL2 s3_4_c1_c1_4
++#define ASR_NAME_HFGWTR_EL2 s3_4_c1_c1_5
++#define ASR_NAME_HFGITR_EL2 s3_4_c1_c1_6
++#define ASR_NAME_HACR_EL2 s3_4_c1_c1_7
++#define ASR_NAME_HCRX_EL2 s3_4_c1_c2_2
++#define ASR_NAME_TTBR0_EL2 s3_4_c2_c0_0
++#define ASR_NAME_TTBR1_EL2 s3_4_c2_c0_1
++#define ASR_NAME_TCR_EL2 s3_4_c2_c0_2
++#define ASR_NAME_VTTBR_EL2 s3_4_c2_c1_0
++#define ASR_NAME_VTCR_EL2 s3_4_c2_c1_2
++#define ASR_NAME_VNCR_EL2 s3_4_c2_c2_0
++#define ASR_NAME_DACR32_EL2 s3_4_c3_c0_0
++#define ASR_NAME_HDFGRTR_EL2 s3_4_c3_c1_4
++#define ASR_NAME_HDFGWTR_EL2 s3_4_c3_c1_5
++#define ASR_NAME_SPSR_EL2 s3_4_c4_c0_0
++#define ASR_NAME_ELR_EL2 s3_4_c4_c0_1
++#define ASR_NAME_SP_EL1 s3_4_c4_c1_0
++#define ASR_NAME_SPSR_irq s3_4_c4_c3_0
++#define ASR_NAME_SPSR_abt s3_4_c4_c3_1
++#define ASR_NAME_SPSR_und s3_4_c4_c3_2
++#define ASR_NAME_SPSR_fiq s3_4_c4_c3_3
++#define ASR_NAME_IFSR32_EL2 s3_4_c5_c0_1
++#define ASR_NAME_AFSR0_EL2 s3_4_c5_c1_0
++#define ASR_NAME_AFSR1_EL2 s3_4_c5_c1_1
++#define ASR_NAME_ESR_EL2 s3_4_c5_c2_0
++#define ASR_NAME_VSESR_EL2 s3_4_c5_c2_3
++#define ASR_NAME_FPEXC32_EL2 s3_4_c5_c3_0
++#define ASR_NAME_FAR_EL2 s3_4_c6_c0_0
++#define ASR_NAME_HPFAR_EL2 s3_4_c6_c0_4
++#define ASR_NAME_MAIR_EL12 s3_5_c10_c2_0
++#define ASR_NAME_AMAIR_EL12 s3_5_c10_c3_0
++#define ASR_NAME_VBAR_EL12 s3_5_c12_c0_0
++#define ASR_NAME_CONTEXTIDR_EL12 s3_5_c13_c0_1
++#define ASR_NAME_CNTKCTL_EL12 s3_5_c14_c1_0
++#define ASR_NAME_CNTP_TVAL_EL02 s3_5_c14_c2_0
++#define ASR_NAME_CNTP_CTL_EL02 s3_5_c14_c2_1
++#define ASR_NAME_CNTP_CVAL_EL02 s3_5_c14_c2_2
++#define ASR_NAME_CNTV_TVAL_EL02 s3_5_c14_c3_0
++#define ASR_NAME_CNTV_CTL_EL02 s3_5_c14_c3_1
++#define ASR_NAME_CNTV_CVAL_EL02 s3_5_c14_c3_2
++#define ASR_NAME_IPI_RR_LOCAL_EL1 s3_5_c15_c0_0
++#define ASR_NAME_IPI_RR_GLOBAL_EL1 s3_5_c15_c0_1
++#define ASR_NAME_AF_ERR_CFG0 s3_5_c15_c0_2
++#define ASR_NAME_AP_ERR_CFG0 s3_5_c15_c0_3
++#define ASR_NAME_AF_ERR_SRC_IDS s3_5_c15_c0_4
++#define ASR_NAME_DPC_ERR_STS s3_5_c15_c0_5
++#define ASR_NAME_DPC_ERR_CTL s3_5_c15_c0_6
++#define ASR_NAME_CPU_STS s3_5_c15_c10_0
++#define ASR_NAME_HIST_TRIG s3_5_c15_c10_1
++#define ASR_NAME_ARRAY_INDEX s3_5_c15_c11_0
++#define ASR_NAME_IL1_DATA0 s3_5_c15_c12_0
++#define ASR_NAME_IL1_DATA1 s3_5_c15_c12_1
++#define ASR_NAME_DL1_DATA0 s3_5_c15_c12_2
++#define ASR_NAME_DL1_DATA1 s3_5_c15_c12_3
++#define ASR_NAME_MMUDATA0 s3_5_c15_c12_4
++#define ASR_NAME_MMUDATA1 s3_5_c15_c12_5
++#define ASR_NAME_LLC_DATA0 s3_5_c15_c13_4
++#define ASR_NAME_LLC_DATA1 s3_5_c15_c13_5
++#define ASR_NAME_TRACE_CORE_CFG s3_5_c15_c1_0
++#define ASR_NAME_IPI_SR s3_5_c15_c1_1
++#define ASR_NAME_APL_LRTMR_EL2 s3_5_c15_c1_2
++#define ASR_NAME_APL_INTENABLE_EL2 s3_5_c15_c1_3
++#define ASR_NAME_KTRACE_MESSAGE s3_5_c15_c1_4
++#define ASR_NAME_TRACE_CORE_CFG_EXT s3_5_c15_c1_5
++#define ASR_NAME_WatchDogDiag0 s3_5_c15_c1_6
++#define ASR_NAME_WatchDogDiag1 s3_5_c15_c1_7
++#define ASR_NAME_DBG_WRAP_GLB s3_5_c15_c2_0
++#define ASR_NAME_TRACE_STREAM_BASE s3_5_c15_c2_1
++#define ASR_NAME_TRACE_STREAM_FILL s3_5_c15_c2_2
++#define ASR_NAME_TRACE_STREAM_BASE1 s3_5_c15_c2_3
++#define ASR_NAME_TRACE_STREAM_FILL1 s3_5_c15_c2_4
++#define ASR_NAME_TRACE_STREAM_IRQ s3_5_c15_c2_5
++#define ASR_NAME_TRACE_AUX_CTL s3_5_c15_c3_0
++#define ASR_NAME_IPI_CR s3_5_c15_c3_1
++#define ASR_NAME_UTRIG_EVENT s3_5_c15_c3_2
++#define ASR_NAME_TRACE_CTL s3_5_c15_c3_4
++#define ASR_NAME_TRACE_DAT s3_5_c15_c3_5
++#define ASR_NAME_CPU_CFG s3_5_c15_c4_0
++#define ASR_NAME_PBLK_STS s3_5_c15_c4_1
++#define ASR_NAME_CPU_OVRD s3_5_c15_c5_0
++#define ASR_NAME_PBLK_EXE_ST s3_5_c15_c5_2
++#define ASR_NAME_ACC_OVRD s3_5_c15_c6_0
++#define ASR_NAME_CPM_PWRDN_CTL s3_5_c15_c6_2
++#define ASR_NAME_PRE_LLCFLUSH_TMR s3_5_c15_c7_0
++#define ASR_NAME_PRE_TD_TMR s3_5_c15_c8_0
++#define ASR_NAME_ACC_SLP_WAKE_UP_TMR s3_5_c15_c8_1
++#define ASR_NAME_PBLK_PSW_DLY s3_5_c15_c9_0
++#define ASR_NAME_SCTLR_EL12 s3_5_c1_c0_0
++#define ASR_NAME_ACTLR_EL12 s3_5_c1_c0_1
++#define ASR_NAME_CPACR_EL12 s3_5_c1_c0_2
++#define ASR_NAME_TTBR0_EL12 s3_5_c2_c0_0
++#define ASR_NAME_TTBR1_EL12 s3_5_c2_c0_1
++#define ASR_NAME_TCR_EL12 s3_5_c2_c0_2
++#define ASR_NAME_SPSR_EL12 s3_5_c4_c0_0
++#define ASR_NAME_ELR_EL12 s3_5_c4_c0_1
++#define ASR_NAME_AFSR0_EL12 s3_5_c5_c1_0
++#define ASR_NAME_AFSR1_EL12 s3_5_c5_c1_1
++#define ASR_NAME_ESR_EL12 s3_5_c5_c2_0
++#define ASR_NAME_FAR_EL12 s3_5_c6_c0_0
++#define ASR_NAME_MAIR_EL3 s3_6_c10_c2_0
++#define ASR_NAME_AMAIR_EL3 s3_6_c10_c3_0
++#define ASR_NAME_VBAR_EL3 s3_6_c12_c0_0
++#define ASR_NAME_RVBAR_EL3 s3_6_c12_c0_1
++#define ASR_NAME_RMR_EL3 s3_6_c12_c0_2
++#define ASR_NAME_TPIDR_EL3 s3_6_c13_c0_2
++#define ASR_NAME_MMU_ERR_STS s3_6_c15_c0_0
++#define ASR_NAME_AFSR1_GL21 s3_6_c15_c0_1
++#define ASR_NAME_AFSR1_GL2 s3_6_c15_c0_2
++#define ASR_NAME_AFSR1_GL12 s3_6_c15_c0_3
++#define ASR_NAME_BP_OBJC_ADR_EL1 s3_6_c15_c0_4
++#define ASR_NAME_BP_OBJC_CTL_EL1 s3_6_c15_c0_5
++#define ASR_NAME_SP_GL11_GL21 s3_6_c15_c0_6
++#define ASR_NAME_MMU_SESR_EL2 s3_6_c15_c0_7
++#define ASR_NAME_SP_GL1 s3_6_c15_c10_0
++#define ASR_NAME_TPIDR_GL1 s3_6_c15_c10_1
++#define ASR_NAME_VBAR_GL21 s3_6_c15_c10_2
++#define ASR_NAME_SPSR_GL21 s3_6_c15_c10_3
++#define ASR_NAME_ASPSR_GL21 s3_6_c15_c10_4
++#define ASR_NAME_ESR_GL21 s3_6_c15_c10_5
++#define ASR_NAME_ELR_GL21 s3_6_c15_c10_6
++#define ASR_NAME_FAR_GL21 s3_6_c15_c10_7
++#define ASR_NAME_SP_GL2 s3_6_c15_c11_0
++#define ASR_NAME_TPIDR_GL2 s3_6_c15_c11_1
++#define ASR_NAME_VBAR_GL2 s3_6_c15_c11_2
++#define ASR_NAME_SPSR_GL2 s3_6_c15_c11_3
++#define ASR_NAME_ASPSR_GL2 s3_6_c15_c11_4
++#define ASR_NAME_ESR_GL2 s3_6_c15_c11_5
++#define ASR_NAME_ELR_GL2 s3_6_c15_c11_6
++#define ASR_NAME_FAR_GL2 s3_6_c15_c11_7
++#define ASR_NAME_GXF_ENTRY_EL2 s3_6_c15_c12_0
++#define ASR_NAME_GXF_PABENTRY_EL2 s3_6_c15_c12_1
++#define ASR_NAME_APCTL_EL2 s3_6_c15_c12_2
++#define ASR_NAME_APSTS_EL2 s3_6_c15_c12_3
++#define ASR_NAME_APSTS_EL21 s3_6_c15_c12_4
++#define ASR_NAME_KERNKEYLo_EL2 s3_6_c15_c12_5
++#define ASR_NAME_KERNKEYHi_EL2 s3_6_c15_c12_6
++#define ASR_NAME_ASPSR_EL12 s3_6_c15_c12_7
++#define ASR_NAME_APIAKeyLo_EL2 s3_6_c15_c13_0
++#define ASR_NAME_APIAKeyHi_EL2 s3_6_c15_c13_1
++#define ASR_NAME_APIBKeyLo_EL2 s3_6_c15_c13_2
++#define ASR_NAME_APIBKeyHi_EL2 s3_6_c15_c13_3
++#define ASR_NAME_APDAKeyLo_EL2 s3_6_c15_c13_4
++#define ASR_NAME_APDAKeyHi_EL2 s3_6_c15_c13_5
++#define ASR_NAME_APDBKeyLo_EL2 s3_6_c15_c13_6
++#define ASR_NAME_APDBKeyHi_EL2 s3_6_c15_c13_7
++#define ASR_NAME_APGAKeyLo_EL2 s3_6_c15_c14_0
++#define ASR_NAME_APGAKeyHi_EL2 s3_6_c15_c14_1
++#define ASR_NAME_SPRR_CONFIG_EL2 s3_6_c15_c14_2
++#define ASR_NAME_SPRR_AMRANGE_EL2 s3_6_c15_c14_3
++#define ASR_NAME_VMKEYLo_EL2 s3_6_c15_c14_4
++#define ASR_NAME_VMKEYHi_EL2 s3_6_c15_c14_5
++#define ASR_NAME_MMU_SFAR_EL2 s3_6_c15_c14_6
++#define ASR_NAME_APSTS_EL12 s3_6_c15_c14_7
++#define ASR_NAME_APCTL_EL12 s3_6_c15_c15_0
++#define ASR_NAME_GXF_CONFIG_EL12 s3_6_c15_c15_1
++#define ASR_NAME_GXF_ENTRY_EL12 s3_6_c15_c15_2
++#define ASR_NAME_GXF_PABENTRY_EL12 s3_6_c15_c15_3
++#define ASR_NAME_SPRR_CONFIG_EL12 s3_6_c15_c15_4
++#define ASR_NAME_SPRR_AMRANGE_EL12 s3_6_c15_c15_5
++#define ASR_NAME_MMU_SESR_CTL_EL2 s3_6_c15_c15_6
++#define ASR_NAME_SPRR_PPERM_EL12 s3_6_c15_c15_7
++#define ASR_NAME_SPRR_CONFIG_EL21 s3_6_c15_c1_0
++#define ASR_NAME_HPFAR_GL2 s3_6_c15_c1_1
++#define ASR_NAME_GXF_CONFIG_EL21 s3_6_c15_c1_2
++#define ASR_NAME_SPRR_AMRANGE_EL1 s3_6_c15_c1_3
++#define ASR_NAME_GXF_CONFIG_EL2 s3_6_c15_c1_4
++#define ASR_NAME_SPRR_UPERM_EL02 s3_6_c15_c1_5
++#define ASR_NAME_SPRR_PPERM_EL21 s3_6_c15_c1_6
++#define ASR_NAME_SPRR_PPERM_EL2 s3_6_c15_c1_7
++#define ASR_NAME_APGAKeyLo_EL12 s3_6_c15_c2_1
++#define ASR_NAME_APGAKeyHi_EL12 s3_6_c15_c2_2
++#define ASR_NAME_KERNKEYLo_EL12 s3_6_c15_c2_3
++#define ASR_NAME_KERNKEYHi_EL12 s3_6_c15_c2_4
++#define ASR_NAME_AFPCR_EL0 s3_6_c15_c2_5
++#define ASR_NAME_SP_GL22 s3_6_c15_c2_6
++#define ASR_NAME_AMXIDR_EL1 s3_6_c15_c2_7
++#define ASR_NAME_SPRR_UMPRR_EL1 s3_6_c15_c3_0
++#define ASR_NAME_SPRR_PMPRR_EL21 s3_6_c15_c3_1
++#define ASR_NAME_SPRR_PMPRR_EL2 s3_6_c15_c3_2
++#define ASR_NAME_SPRR_UPERM_SH01_EL1 s3_6_c15_c3_3
++#define ASR_NAME_SPRR_UPERM_SH02_EL1 s3_6_c15_c3_4
++#define ASR_NAME_SPRR_UPERM_SH03_EL1 s3_6_c15_c3_5
++#define ASR_NAME_SPRR_UPERM_SH04_EL1 s3_6_c15_c3_6
++#define ASR_NAME_SPRR_UPERM_SH05_EL1 s3_6_c15_c3_7
++#define ASR_NAME_SPRR_UPERM_SH06_EL1 s3_6_c15_c4_0
++#define ASR_NAME_SPRR_UPERM_SH07_EL1 s3_6_c15_c4_1
++#define ASR_NAME_SPRR_PPERM_SH01_EL21 s3_6_c15_c4_2
++#define ASR_NAME_SPRR_PPERM_SH02_EL21 s3_6_c15_c4_3
++#define ASR_NAME_SPRR_PPERM_SH03_EL21 s3_6_c15_c4_4
++#define ASR_NAME_SPRR_PPERM_SH04_EL21 s3_6_c15_c4_5
++#define ASR_NAME_SPRR_PPERM_SH05_EL21 s3_6_c15_c4_6
++#define ASR_NAME_SPRR_PPERM_SH06_EL21 s3_6_c15_c4_7
++#define ASR_NAME_SPRR_PPERM_SH07_EL21 s3_6_c15_c5_0
++#define ASR_NAME_SPRR_PPERM_SH01_EL2 s3_6_c15_c5_1
++#define ASR_NAME_SPRR_PPERM_SH02_EL2 s3_6_c15_c5_2
++#define ASR_NAME_SPRR_PPERM_SH03_EL2 s3_6_c15_c5_3
++#define ASR_NAME_SPRR_PPERM_SH04_EL2 s3_6_c15_c5_4
++#define ASR_NAME_SPRR_PPERM_SH05_EL2 s3_6_c15_c5_5
++#define ASR_NAME_SPRR_PPERM_SH06_EL2 s3_6_c15_c5_6
++#define ASR_NAME_SPRR_PPERM_SH07_EL2 s3_6_c15_c5_7
++#define ASR_NAME_SPRR_PMPRR_EL12 s3_6_c15_c6_0
++#define ASR_NAME_SPRR_PPERM_SH01_EL12 s3_6_c15_c6_1
++#define ASR_NAME_SPRR_PPERM_SH02_EL12 s3_6_c15_c6_2
++#define ASR_NAME_SPRR_PPERM_SH03_EL12 s3_6_c15_c6_3
++#define ASR_NAME_SPRR_PPERM_SH04_EL12 s3_6_c15_c6_4
++#define ASR_NAME_SPRR_PPERM_SH05_EL12 s3_6_c15_c6_5
++#define ASR_NAME_SPRR_PPERM_SH06_EL12 s3_6_c15_c6_6
++#define ASR_NAME_SPRR_PPERM_SH07_EL12 s3_6_c15_c6_7
++#define ASR_NAME_APIAKeyLo_EL12 s3_6_c15_c7_0
++#define ASR_NAME_APIAKeyHi_EL12 s3_6_c15_c7_1
++#define ASR_NAME_APIBKeyLo_EL12 s3_6_c15_c7_2
++#define ASR_NAME_APIBKeyHi_EL12 s3_6_c15_c7_3
++#define ASR_NAME_APDAKeyLo_EL12 s3_6_c15_c7_4
++#define ASR_NAME_APDAKeyHi_EL12 s3_6_c15_c7_5
++#define ASR_NAME_APDBKeyLo_EL12 s3_6_c15_c7_6
++#define ASR_NAME_APDBKeyHi_EL12 s3_6_c15_c7_7
++#define ASR_NAME_CurrentG s3_6_c15_c8_0
++#define ASR_NAME_GXF_ENTRY_EL21 s3_6_c15_c8_1
++#define ASR_NAME_GXF_PABENTRY_EL21 s3_6_c15_c8_2
++#define ASR_NAME_ASPSR_EL21 s3_6_c15_c8_3
++#define ASR_NAME_ADSPSR_EL0 s3_6_c15_c8_4
++#define ASR_NAME_PMCR1_GL2 s3_6_c15_c8_5
++#define ASR_NAME_ASPSR_EL2 s3_6_c15_c8_6
++#define ASR_NAME_PMCR1_GL21 s3_6_c15_c8_7
++#define ASR_NAME_VBAR_GL12 s3_6_c15_c9_2
++#define ASR_NAME_SPSR_GL12 s3_6_c15_c9_3
++#define ASR_NAME_ASPSR_GL12 s3_6_c15_c9_4
++#define ASR_NAME_ESR_GL12 s3_6_c15_c9_5
++#define ASR_NAME_ELR_GL12 s3_6_c15_c9_6
++#define ASR_NAME_FAR_GL12 s3_6_c15_c9_7
++#define ASR_NAME_SCTLR_EL3 s3_6_c1_c0_0
++#define ASR_NAME_ACTLR_EL3 s3_6_c1_c0_1
++#define ASR_NAME_SCR_EL3 s3_6_c1_c1_0
++#define ASR_NAME_SDER32_EL3 s3_6_c1_c1_1
++#define ASR_NAME_CPTR_EL3 s3_6_c1_c1_2
++#define ASR_NAME_MDCR_EL3 s3_6_c1_c3_1
++#define ASR_NAME_TTBR0_EL3 s3_6_c2_c0_0
++#define ASR_NAME_TCR_EL3 s3_6_c2_c0_2
++#define ASR_NAME_SPSR_EL3 s3_6_c4_c0_0
++#define ASR_NAME_ELR_EL3 s3_6_c4_c0_1
++#define ASR_NAME_SP_EL2 s3_6_c4_c1_0
++#define ASR_NAME_AFSR0_EL3 s3_6_c5_c1_0
++#define ASR_NAME_AFSR1_EL3 s3_6_c5_c1_1
++#define ASR_NAME_ESR_EL3 s3_6_c5_c2_0
++#define ASR_NAME_FAR_EL3 s3_6_c6_c0_0
++#define ASR_NAME_CNTPS_TVAL_EL1 s3_7_c14_c2_0
++#define ASR_NAME_CNTPS_CTL_EL1 s3_7_c14_c2_1
++#define ASR_NAME_CNTPS_CVAL_EL1 s3_7_c14_c2_2
++#define ASR_NAME_PWRDNSAVE0 s3_7_c15_c0_0
++#define ASR_NAME_NRG_ACC_CTL s3_7_c15_c0_1
++#define ASR_NAME_AON_CNT0 s3_7_c15_c0_2
++#define ASR_NAME_CPU_CNT0 s3_7_c15_c0_3
++#define ASR_NAME_UPMCR0_EL1 s3_7_c15_c0_4
++#define ASR_NAME_UPMC8 s3_7_c15_c0_5
++#define ASR_NAME_AON_CNT5 s3_7_c15_c10_2
++#define ASR_NAME_CPU_CNT5 s3_7_c15_c10_3
++#define ASR_NAME_UPMC3 s3_7_c15_c10_4
++#define ASR_NAME_UPMCR1_EL1 s3_7_c15_c10_5
++#define ASR_NAME_AON_CNT_CTL5 s3_7_c15_c11_2
++#define ASR_NAME_CPU_CNT_CTL5 s3_7_c15_c11_3
++#define ASR_NAME_UPMC4 s3_7_c15_c11_4
++#define ASR_NAME_UPMESR1_EL1 s3_7_c15_c11_5
++#define ASR_NAME_AON_CNT6 s3_7_c15_c12_2
++#define ASR_NAME_CPU_CNT6 s3_7_c15_c12_3
++#define ASR_NAME_UPMC5 s3_7_c15_c12_4
++#define ASR_NAME_AON_CNT_CTL6 s3_7_c15_c13_2
++#define ASR_NAME_CPU_CNT_CTL6 s3_7_c15_c13_3
++#define ASR_NAME_UPMC6 s3_7_c15_c13_4
++#define ASR_NAME_AON_CNT7 s3_7_c15_c14_2
++#define ASR_NAME_CPU_CNT7 s3_7_c15_c14_3
++#define ASR_NAME_UPMC7 s3_7_c15_c14_4
++#define ASR_NAME_AON_CNT_CTL7 s3_7_c15_c15_2
++#define ASR_NAME_CPU_CNT_CTL7 s3_7_c15_c15_3
++#define ASR_NAME_PWRDNSAVE1 s3_7_c15_c1_0
++#define ASR_NAME_CORE_NRG_ACC_DAT s3_7_c15_c1_1
++#define ASR_NAME_AON_CNT_CTL0 s3_7_c15_c1_2
++#define ASR_NAME_CPU_CNT_CTL0 s3_7_c15_c1_3
++#define ASR_NAME_UPMESR0_EL1 s3_7_c15_c1_4
++#define ASR_NAME_UPMC9 s3_7_c15_c1_5
++#define ASR_NAME_ACC_PWR_DN_SAVE s3_7_c15_c2_0
++#define ASR_NAME_CPM_NRG_ACC_DAT s3_7_c15_c2_1
++#define ASR_NAME_AON_CNT1 s3_7_c15_c2_2
++#define ASR_NAME_CPU_CNT1 s3_7_c15_c2_3
++#define ASR_NAME_UPMSWCTRL_EL1 s3_7_c15_c2_4
++#define ASR_NAME_UPMC10 s3_7_c15_c2_5
++#define ASR_NAME_CORE_SRM_NRG_ACC_DAT s3_7_c15_c3_1
++#define ASR_NAME_AON_CNT_CTL1 s3_7_c15_c3_2
++#define ASR_NAME_CPU_CNT_CTL1 s3_7_c15_c3_3
++#define ASR_NAME_UPMECM0_EL1 s3_7_c15_c3_4
++#define ASR_NAME_UPMC11 s3_7_c15_c3_5
++#define ASR_NAME_AON_CNT_CTL s3_7_c15_c4_0
++#define ASR_NAME_CPM_SRM_NRG_ACC_DAT s3_7_c15_c4_1
++#define ASR_NAME_AON_CNT2 s3_7_c15_c4_2
++#define ASR_NAME_CPU_CNT2 s3_7_c15_c4_3
++#define ASR_NAME_UPMECM1_EL1 s3_7_c15_c4_4
++#define ASR_NAME_UPMC12 s3_7_c15_c4_5
++#define ASR_NAME_CPU_CNT_CTL s3_7_c15_c5_0
++#define ASR_NAME_AON_CNT_CTL2 s3_7_c15_c5_2
++#define ASR_NAME_CPU_CNT_CTL2 s3_7_c15_c5_3
++#define ASR_NAME_UPMPCM_EL1 s3_7_c15_c5_4
++#define ASR_NAME_UPMC13 s3_7_c15_c5_5
++#define ASR_NAME_AON_CNT3 s3_7_c15_c6_2
++#define ASR_NAME_CPU_CNT3 s3_7_c15_c6_3
++#define ASR_NAME_UPMSR_EL1 s3_7_c15_c6_4
++#define ASR_NAME_UPMC14 s3_7_c15_c6_5
++#define ASR_NAME_AON_CNT_CTL3 s3_7_c15_c7_2
++#define ASR_NAME_CPU_CNT_CTL3 s3_7_c15_c7_3
++#define ASR_NAME_UPMC0 s3_7_c15_c7_4
++#define ASR_NAME_UPMC15 s3_7_c15_c7_5
++#define ASR_NAME_AON_CNT4 s3_7_c15_c8_2
++#define ASR_NAME_CPU_CNT4 s3_7_c15_c8_3
++#define ASR_NAME_UPMC1 s3_7_c15_c8_4
++#define ASR_NAME_UPMECM2_EL1 s3_7_c15_c8_5
++#define ASR_NAME_AON_CNT_CTL4 s3_7_c15_c9_2
++#define ASR_NAME_CPU_CNT_CTL4 s3_7_c15_c9_3
++#define ASR_NAME_UPMC2 s3_7_c15_c9_4
++#define ASR_NAME_UPMECM3_EL1 s3_7_c15_c9_5
++
++//
++// Macroses
++//
++
++#pragma GCC diagnostic pop
++
++#define MSR_REG_HELPER2(x) #x
++#define MSR_REG_HELPER1(x) MSR_REG_HELPER2(x)
++#define MSR_REG(x) MSR_REG_HELPER1(MSR_NAME_ ## x)
++
++#define ASR_REG_HELPER2(x) #x
++#define ASR_REG_HELPER1(x) ASR_REG_HELPER2(x)
++#define ASR_REG(x) ASR_REG_HELPER1(ASR_NAME_ ## x)
++
++#endif /* _MACHINE_ARM64_EXTRA_REGS_H */
+diff --git a/osfmk/arm64/machine_routines.c b/osfmk/arm64/machine_routines.c
+index c962e783..3f951085 100644
+--- a/osfmk/arm64/machine_routines.c
++++ b/osfmk/arm64/machine_routines.c
+@@ -2197,7 +2197,7 @@ static inline uint64_t
+ nonspeculative_timebase(void)
+ {
+ #if defined(HAS_ACNTVCT)
+-	return __builtin_arm_rsr64("S3_4_c15_c10_6");
++	return __builtin_arm_rsr64(ASR_REG(REDIR_LCL_ACNTVCTSS_EL0));
+ #elif __ARM_ARCH_8_6__
+ 	return __builtin_arm_rsr64("CNTVCTSS_EL0");
+ #else
+diff --git a/osfmk/arm64/monotonic.h b/osfmk/arm64/monotonic.h
+index 8ce5530b..6192b6bf 100644
+--- a/osfmk/arm64/monotonic.h
++++ b/osfmk/arm64/monotonic.h
+@@ -35,6 +35,8 @@
+ 
+ #include <pexpert/arm64/board_config.h>
+ 
++#include <machine/machine_extra_regs.h>
++
+ #if KERNEL_PRIVATE
+ 
+ __BEGIN_DECLS
+@@ -82,20 +84,20 @@ static inline bool
+ mt_pmi_pending(uint64_t * restrict pmcr0_out,
+     uint64_t * restrict upmsr_out)
+ {
+-	uint64_t pmcr0 = __builtin_arm_rsr64("PMCR0_EL1");
++	uint64_t pmcr0 = __builtin_arm_rsr64(ASR_REG(PMCR0_EL1));
+ 	bool pmi = PMCR0_PMI(pmcr0);
+ 	if (pmi) {
+ 		/*
+ 		 * Acknowledge the PMI by clearing the pmai bit.
+ 		 */
+-		__builtin_arm_wsr64("PMCR0_EL1", pmcr0 & ~PMCR0_PMAI);
++		__builtin_arm_wsr64(ASR_REG(PMCR0_EL1), pmcr0 & ~PMCR0_PMAI);
+ 	}
+ 	*pmcr0_out = pmcr0;
+ 
+ #if HAS_UNCORE_CTRS
+ 	extern bool mt_uncore_enabled;
+ 	if (mt_uncore_enabled) {
+-		uint64_t upmsr = __builtin_arm_rsr64("UPMSR_EL1");
++		uint64_t upmsr = __builtin_arm_rsr64(ASR_REG(UPMSR_EL1));
+ 		if (UPMSR_PMI(upmsr)) {
+ 			pmi = true;
+ 		}
+diff --git a/osfmk/arm64/monotonic_arm64.c b/osfmk/arm64/monotonic_arm64.c
+index 5a42abf1..d7d3a803 100644
+--- a/osfmk/arm64/monotonic_arm64.c
++++ b/osfmk/arm64/monotonic_arm64.c
+@@ -36,6 +36,7 @@
+ #include <kern/monotonic.h>
+ #include <machine/atomic.h>
+ #include <machine/limits.h> /* CHAR_BIT */
++#include <machine/machine_extra_regs.h>
+ #include <os/overflow.h>
+ #include <pexpert/arm64/board_config.h>
+ #include <pexpert/device_tree.h> /* SecureDTFindEntry */
+@@ -188,11 +189,11 @@ core_init_execution_modes(void)
+ {
+ 	uint64_t pmcr1;
+ 
+-	pmcr1 = __builtin_arm_rsr64("PMCR1_EL1");
++	pmcr1 = __builtin_arm_rsr64(ASR_REG(PMCR1_EL1));
+ 	pmcr1 |= PMCR1_INIT;
+-	__builtin_arm_wsr64("PMCR1_EL1", pmcr1);
++	__builtin_arm_wsr64(ASR_REG(PMCR1_EL1), pmcr1);
+ #if CONFIG_EXCLAVES
+-	__builtin_arm_wsr64("PMCR1_EL12", pmcr1);
++	__builtin_arm_wsr64(ASR_REG(PMCR1_EL12), pmcr1);
+ #endif
+ }
+ 
+@@ -215,7 +216,7 @@ uint64_t
+ mt_core_snap(unsigned int ctr)
+ {
+ 	switch (ctr) {
+-#define PMC_RD(CTR, UNUSED) case (CTR): return __builtin_arm_rsr64(__MSR_STR(PMC ## CTR))
++#define PMC_RD(CTR, UNUSED) case (CTR): return __builtin_arm_rsr64(ASR_REG(PMC ## CTR))
+ 		PMC_ALL(PMC_RD, 0);
+ #undef PMC_RD
+ 	default:
+@@ -229,10 +230,10 @@ mt_core_set_snap(unsigned int ctr, uint64_t count)
+ {
+ 	switch (ctr) {
+ 	case 0:
+-		__builtin_arm_wsr64("PMC0", count);
++		__builtin_arm_wsr64(ASR_REG(PMC0), count);
+ 		break;
+ 	case 1:
+-		__builtin_arm_wsr64("PMC1", count);
++		__builtin_arm_wsr64(ASR_REG(PMC1), count);
+ 		break;
+ 	default:
+ 		panic("monotonic: invalid core counter %u write %llu", ctr, count);
+@@ -245,7 +246,7 @@ core_set_enabled(void)
+ {
+ 	uint32_t kpc_mask = kpc_get_running() &
+ 	    (KPC_CLASS_CONFIGURABLE_MASK | KPC_CLASS_POWER_MASK);
+-	uint64_t pmcr0 = __builtin_arm_rsr64("PMCR0_EL1");
++	uint64_t pmcr0 = __builtin_arm_rsr64(ASR_REG(PMCR0_EL1));
+ 	pmcr0 |= PMCR0_INIT | PMCR0_FIXED_EN;
+ 
+ 	if (kpc_mask != 0) {
+@@ -261,12 +262,12 @@ core_set_enabled(void)
+ 		pmcr0 |= kpc_ctrs;
+ 	}
+ 
+-	__builtin_arm_wsr64("PMCR0_EL1", pmcr0);
++	__builtin_arm_wsr64(ASR_REG(PMCR0_EL1), pmcr0);
+ #if MACH_ASSERT
+ 	/*
+ 	 * Only check for the values that were ORed in.
+ 	 */
+-	uint64_t pmcr0_check = __builtin_arm_rsr64("PMCR0_EL1");
++	uint64_t pmcr0_check = __builtin_arm_rsr64(ASR_REG(PMCR0_EL1));
+ 	if ((pmcr0_check & (PMCR0_INIT | PMCR0_FIXED_EN)) != (PMCR0_INIT | PMCR0_FIXED_EN)) {
+ 		panic("monotonic: hardware ignored enable (read %llx, wrote %llx)",
+ 		    pmcr0_check, pmcr0);
+@@ -281,18 +282,18 @@ core_idle(__unused cpu_data_t *cpu)
+ 	assert(ml_get_interrupts_enabled() == FALSE);
+ 
+ #if DEBUG
+-	uint64_t pmcr0 = __builtin_arm_rsr64("PMCR0_EL1");
++	uint64_t pmcr0 = __builtin_arm_rsr64(ASR_REG(PMCR0_EL1));
+ 	if ((pmcr0 & PMCR0_FIXED_EN) == 0) {
+ 		panic("monotonic: counters disabled before idling, pmcr0 = 0x%llx", pmcr0);
+ 	}
+-	uint64_t pmcr1 = __builtin_arm_rsr64("PMCR1_EL1");
++	uint64_t pmcr1 = __builtin_arm_rsr64(ASR_REG(PMCR1_EL1));
+ 	if ((pmcr1 & PMCR1_INIT) == 0) {
+ 		panic("monotonic: counter modes disabled before idling, pmcr1 = 0x%llx", pmcr1);
+ 	}
+ #endif /* DEBUG */
+ 
+ 	/* disable counters before updating */
+-	__builtin_arm_wsr64("PMCR0_EL1", PMCR0_INIT);
++	__builtin_arm_wsr64(ASR_REG(PMCR0_EL1), PMCR0_INIT);
+ 
+ 	mt_update_fixed_counts();
+ }
+@@ -490,7 +491,7 @@ uncmon_set_counting_locked_l(__unused unsigned int monid, uint64_t enctrmask)
+ 	 * UPMCR0 controls which counters are enabled and how interrupts are generated
+ 	 * for overflows.
+ 	 */
+-	__builtin_arm_wsr64("UPMCR0_EL1", UPMCR0_INIT | enctrmask);
++	__builtin_arm_wsr64(ASR_REG(UPMCR0_EL1), UPMCR0_INIT | enctrmask);
+ }
+ 
+ #if UNCORE_PER_CLUSTER
+@@ -536,7 +537,8 @@ uncmon_read_counter_locked_l(__unused unsigned int monid, unsigned int ctr)
+ {
+ 	assert(ctr < UNCORE_NCTRS);
+ 	switch (ctr) {
+-#define UPMC_RD(CTR, UNUSED) case (CTR): return __builtin_arm_rsr64(__MSR_STR(UPMC ## CTR))
++
++#define UPMC_RD(CTR, UNUSED) case (CTR): return __builtin_arm_rsr64(ASR_REG(UPMC ## CTR))
+ 		UPMC_ALL(UPMC_RD, 0);
+ #undef UPMC_RD
+ 	default:
+@@ -553,7 +555,7 @@ uncmon_write_counter_locked_l(__unused unsigned int monid, unsigned int ctr,
+ 	assert(ctr < UNCORE_NCTRS);
+ 	switch (ctr) {
+ #define UPMC_WR(CTR, COUNT) case (CTR): \
+-	        return __builtin_arm_wsr64(__MSR_STR(UPMC ## CTR), (COUNT))
++	        return __builtin_arm_wsr64(ASR_REG(UPMC ## CTR), (COUNT))
+ 		UPMC_ALL(UPMC_WR, count);
+ #undef UPMC_WR
+ 	default:
+@@ -638,10 +640,10 @@ uncmon_program_events_locked_l(unsigned int monid)
+ 	 * UPMESR[01] is the event selection register that determines which event a
+ 	 * counter will count.
+ 	 */
+-	CTRL_REG_SET("UPMESR0_EL1", uncore_config.uc_events.uce_regs[0]);
++	CTRL_REG_SET(ASR_REG(UPMESR0_EL1), uncore_config.uc_events.uce_regs[0]);
+ 
+ #if UNCORE_NCTRS > 8
+-	CTRL_REG_SET("UPMESR1_EL1", uncore_config.uc_events.uce_regs[1]);
++	CTRL_REG_SET(ASR_REG(UPMESR1_EL1), uncore_config.uc_events.uce_regs[1]);
+ #endif /* UNCORE_NCTRS > 8 */
+ 
+ 	/*
+@@ -653,15 +655,15 @@ uncmon_program_events_locked_l(unsigned int monid)
+ 	 * has a CPU ID of 4, it might be the first CPU in a cluster.  Shift the
+ 	 * registers right by the ID of the first CPU in the cluster.
+ 	 */
+-	CTRL_REG_SET("UPMECM0_EL1",
++	CTRL_REG_SET(ASR_REG(UPMECM0_EL1),
+ 	    uncore_config.uc_cpu_masks[monid].uccm_regs[0]);
+-	CTRL_REG_SET("UPMECM1_EL1",
++	CTRL_REG_SET(ASR_REG(UPMECM1_EL1),
+ 	    uncore_config.uc_cpu_masks[monid].uccm_regs[1]);
+ 
+ #if UNCORE_NCTRS > 8
+-	CTRL_REG_SET("UPMECM2_EL1",
++	CTRL_REG_SET(ASR_REG(UPMECM2_EL1),
+ 	    uncore_config.uc_cpu_masks[monid].uccm_regs[2]);
+-	CTRL_REG_SET("UPMECM3_EL1",
++	CTRL_REG_SET(ASR_REG(UPMECM3_EL1),
+ 	    uncore_config.uc_cpu_masks[monid].uccm_regs[3]);
+ #endif /* UNCORE_NCTRS > 8 */
+ }
+@@ -695,7 +697,7 @@ uncmon_program_events_locked_r(unsigned int monid)
+ static void
+ uncmon_clear_int_locked_l(__unused unsigned int monid)
+ {
+-	__builtin_arm_wsr64("UPMSR_EL1", 0);
++	__builtin_arm_wsr64(ASR_REG(UPMSR_EL1), 0);
+ }
+ 
+ #if UNCORE_PER_CLUSTER
+@@ -738,7 +740,7 @@ uncmon_init_locked_l(unsigned int monid)
+ 	 * UPMPCM defines the PMI core mask for the UPMCs -- which cores should
+ 	 * receive interrupts on overflow.
+ 	 */
+-	CTRL_REG_SET("UPMPCM_EL1", uncmon_get_pmi_mask(monid));
++	CTRL_REG_SET(ASR_REG(UPMPCM_EL1), uncmon_get_pmi_mask(monid));
+ 	uncmon_set_counting_locked_l(monid,
+ 	    mt_uncore_enabled ? uncore_active_ctrs : 0);
+ }
+@@ -1308,7 +1310,7 @@ mt_cpu_pmi(cpu_data_t *cpu, uint64_t pmcr0)
+ 	assert(cpu != NULL);
+ 	assert(ml_get_interrupts_enabled() == FALSE);
+ 
+-	__builtin_arm_wsr64("PMCR0_EL1", PMCR0_INIT);
++	__builtin_arm_wsr64(ASR_REG(PMCR0_EL1), PMCR0_INIT);
+ 	/*
+ 	 * Ensure the CPMU has flushed any increments at this point, so PMSR is up
+ 	 * to date.
+@@ -1327,7 +1329,7 @@ mt_cpu_pmi(cpu_data_t *cpu, uint64_t pmcr0)
+ #pragma unused(pmcr0)
+ #endif /* !MONOTONIC_DEBUG */
+ 
+-	uint64_t pmsr = __builtin_arm_rsr64("PMSR_EL1");
++	uint64_t pmsr = __builtin_arm_rsr64(ASR_REG(PMSR_EL1));
+ 
+ #if MONOTONIC_DEBUG
+ 	printf("monotonic: cpu = %d, PMSR = 0x%llx, PMCR0 = 0x%llx\n",
+@@ -1383,7 +1385,7 @@ mt_cpu_pmi(cpu_data_t *cpu, uint64_t pmcr0)
+ 	}
+ 
+ #if MACH_ASSERT
+-	uint64_t pmsr_after_handling = __builtin_arm_rsr64("PMSR_EL1");
++	uint64_t pmsr_after_handling = __builtin_arm_rsr64(ASR_REG(PMSR_EL1));
+ 	if (pmsr_after_handling != 0) {
+ 		unsigned int first_ctr_ovf = __builtin_ffsll(pmsr_after_handling) - 1;
+ 		uint64_t count = 0;
+@@ -1397,7 +1399,7 @@ mt_cpu_pmi(cpu_data_t *cpu, uint64_t pmcr0)
+ 		panic("monotonic: PMI status not cleared on exit from handler, "
+ 		    "PMSR = 0x%llx HANDLE -> -> 0x%llx, handled 0x%llx, "
+ 		    "PMCR0 = 0x%llx, PMC%d = 0x%llx%s", pmsr, pmsr_after_handling,
+-		    handled, __builtin_arm_rsr64("PMCR0_EL1"), first_ctr_ovf, count, extra);
++		    handled, __builtin_arm_rsr64(ASR_REG(PMCR0_EL1)), first_ctr_ovf, count, extra);
+ 	}
+ #endif /* MACH_ASSERT */
+ 
+@@ -1413,7 +1415,7 @@ mt_cpmu_aic_pmi(cpu_id_t source)
+ 		panic("monotonic: PMI from IOCPU %p delivered to %p", source,
+ 		    curcpu->interrupt_nub);
+ 	}
+-	mt_cpu_pmi(curcpu, __builtin_arm_rsr64("PMCR0_EL1"));
++	mt_cpu_pmi(curcpu, __builtin_arm_rsr64(ASR_REG(PMCR0_EL1)));
+ }
+ #endif /* CPMU_AIC_PMI */
+ 
+@@ -1458,7 +1460,7 @@ mt_microstackshot_start_remote(__unused void *arg)
+ {
+ 	cpu_data_t *cpu = getCpuDatap();
+ 
+-	__builtin_arm_wsr64("PMCR0_EL1", PMCR0_INIT);
++	__builtin_arm_wsr64(ASR_REG(PMCR0_EL1), PMCR0_INIT);
+ 
+ 	for (int i = 0; i < MT_CORE_NFIXED; i++) {
+ 		uint64_t count = mt_cpu_update_count(cpu, i);
+diff --git a/osfmk/kern/kern_monotonic.c b/osfmk/kern/kern_monotonic.c
+index 32c607ea..d41d8223 100644
+--- a/osfmk/kern/kern_monotonic.c
++++ b/osfmk/kern/kern_monotonic.c
+@@ -31,6 +31,7 @@
+ #include <kern/monotonic.h>
+ #include <kern/thread.h>
+ #include <machine/atomic.h>
++#include <machine/machine_extra_regs.h>
+ #include <machine/monotonic.h>
+ #include <mach/mach_traps.h>
+ #include <stdatomic.h>
+@@ -179,8 +180,8 @@ mt_cur_cpu_cycles_instrs_speculative(uint64_t *cycles, uint64_t *instrs)
+ 	/*
+ 	 * Keep the MSRs back-to-back to improve throughput.
+ 	 */
+-	uint64_t cur_cycles = __builtin_arm_rsr64("PMC0");
+-	uint64_t cur_instrs = __builtin_arm_rsr64("PMC1");
++	uint64_t cur_cycles = __builtin_arm_rsr64(ASR_REG(PMC0));
++	uint64_t cur_instrs = __builtin_arm_rsr64(ASR_REG(PMC1));
+ 
+ 	uint64_t cycles_sum = mtc->mtc_counts[MT_CORE_CYCLES];
+ 	uint64_t instrs_sum = mtc->mtc_counts[MT_CORE_INSTRS];
+diff --git a/osfmk/machine/Makefile b/osfmk/machine/Makefile
+index d247ea16..7bc77362 100644
+--- a/osfmk/machine/Makefile
++++ b/osfmk/machine/Makefile
+@@ -17,6 +17,7 @@ KERNELFILES = \
+ 	lock.h	\
+ 	locks.h	\
+ 	machine_cpuid.h		\
++	machine_extra_regs.h \
+ 	machine_remote_time.h \
+ 	machine_routines.h	\
+ 	machine_kpc.h		\
+@@ -29,6 +30,7 @@ KERNELFILES = \
+ 	trap.h
+ 
+ EXPORT_FILES = \
++	machine_extra_regs.h \
+ 	machine_remote_time.h
+ 
+ # These are covered by ../../bsd/machine/machine_private.modulemap.
+diff --git a/osfmk/machine/machine_extra_regs.h b/osfmk/machine/machine_extra_regs.h
+new file mode 100644
+index 00000000..2db059a5
+--- /dev/null
++++ b/osfmk/machine/machine_extra_regs.h
+@@ -0,0 +1,14 @@
++#ifndef _MACHINE_MACHINE_EXTRA_REGS_H
++#define _MACHINE_MACHINE_EXTRA_REGS_H
++
++#if defined (__x86_64__)
++#include "x86_64/machine_extra_regs.h"
++#elif defined (__arm64__)
++#include "arm64/machine_extra_regs.h"
++#elif defined (__arm__)
++#include "arm/machine_extra_regs.h"
++#else
++#error architecture not supported
++#endif
++
++#endif /* _MACHINE_MACHINE_EXTRA_REGS_H */
+diff --git a/osfmk/x86_64/Makefile b/osfmk/x86_64/Makefile
+index 90edf3c1..3006afe9 100644
+--- a/osfmk/x86_64/Makefile
++++ b/osfmk/x86_64/Makefile
+@@ -7,6 +7,7 @@ include $(MakeInc_cmd)
+ include $(MakeInc_def)
+ 
+ EXPORT_FILES = \
++	machine_extra_regs.h \
+ 	machine_remote_time.h
+ 
+ 
+@@ -18,7 +19,7 @@ INSTALL_KF_MD_LCL_LIST = ${EXPORT_FILES}
+ 
+ INSTALL_MD_DIR = x86_64
+ 
+-EXPORT_MD_LIST = ${EXPORT_ONLY_FILES} ${EXPORT_FILES} 
++EXPORT_MD_LIST = ${EXPORT_ONLY_FILES} ${EXPORT_FILES}
+ 
+ EXPORT_MD_DIR = x86_64
+ 
+diff --git a/osfmk/x86_64/machine_extra_regs.h b/osfmk/x86_64/machine_extra_regs.h
+new file mode 100644
+index 00000000..42fad563
+--- /dev/null
++++ b/osfmk/x86_64/machine_extra_regs.h
+@@ -0,0 +1,4 @@
++#ifndef _MACHINE_X86_64_EXTRA_REGS_H
++#define _MACHINE_X86_64_EXTRA_REGS_H
++
++#endif /* _MACHINE_X86_64_EXTRA_REGS_H */
