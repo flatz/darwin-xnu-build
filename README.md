@@ -27,10 +27,10 @@
 | macOS 14.3 |    ✅     | [DB](https://github.com/blacktop/darwin-xnu-build/releases/download/v14.3/xnu-codeql.zip) |    ✅       /     ✅     |
 | macOS 14.4 |    ✅     | [DB](https://github.com/blacktop/darwin-xnu-build/releases/download/v14.4/xnu-codeql.zip) |    ✅       /     ✅     |
 | macOS 14.5 |    ✅     | [DB](https://github.com/blacktop/darwin-xnu-build/releases/download/v14.5/xnu-codeql.zip) |    ✅       /     ✅     |
-| macOS 14.6 |    ❓     |                                             ❔                                            |    ❔       /     ❔     |
+| macOS 14.6 |    ✅     |                                             ❔                                            |    ❔       /     ❔     |
 
 > [!NOTE]
-> CodeQL DBs built with `MACHINE_CONFIG=VMAPPLE`  
+> CodeQL DBs built with `MACHINE_CONFIG=VMAPPLE`
 > MacOS `14.3` booted:
 > - via Virtualization.framework with `MACHINE_CONFIG=VMAPPLE`
 > - via qemu with `ARCH_CONFIG=x86_64`
