@@ -359,11 +359,17 @@ patches() {
         '12.5' | '13.0' | '13.1' | '13.2' | '13.3' | '13.4' | '13.5' | '14.0' | '14.1' | '14.2' | '14.3')
             PATCH_DIR="${WORK_DIR}/patches"
             ;;
-        '14.4' | '14.5' | '14.6')
+        '14.4')
             PATCH_DIR="${WORK_DIR}/patches/14.4"
             ;;
+        '14.5')
+            PATCH_DIR="${WORK_DIR}/patches/14.5"
+            ;;
+        '14.6')
+            PATCH_DIR="${WORK_DIR}/patches/14.6"
+            ;;
         *)
-            error "Invalid xnu version"
+            error "Invalid XNU version"
             exit 1
             ;;
         esac
@@ -372,6 +378,8 @@ patches() {
             if git apply --check "$PATCH" 2> /dev/null; then
                 running "Applying patch: ${PATCH}"
                 git apply "$PATCH"
+            else
+                running "Ignoring incompatible or already applied patch: ${PATCH}"
             fi
         done
         cd "${WORK_DIR}"
@@ -628,8 +636,10 @@ build_xnu() {
             SRCROOT="${WORK_DIR}/xnu"
             OBJROOT="${BUILD_DIR}/xnu.obj"
             SYMROOT="${BUILD_DIR}/xnu.sym"
+            export CFLAGS="-v"
+            export LDFLAGS="-v"
             cd "${SRCROOT}"
-            make install -j8 VERBOSE=YES SDKROOT=macosx TARGET_CONFIGS="$KERNEL_CONFIG $ARCH_CONFIG $MACHINE_CONFIG" CONCISE=0 LOGCOLORS=y BUILD_WERROR=0 BUILD_LTO=0 SRCROOT="${SRCROOT}" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}" KDKROOT="${KDKROOT}" TIGHTBEAMC=${TIGHTBEAMC} RC_DARWIN_KERNEL_VERSION=${RC_DARWIN_KERNEL_VERSION}
+            make MAKEJOBS=-j1 install VERBOSE=YES SDKROOT=macosx TARGET_CONFIGS="$KERNEL_CONFIG $ARCH_CONFIG $MACHINE_CONFIG" CONCISE=0 LOGCOLORS=y BUILD_WERROR=0 BUILD_LTO=0 SRCROOT="${SRCROOT}" OBJROOT="${OBJROOT}" SYMROOT="${SYMROOT}" DSTROOT="${DSTROOT}" FAKEROOT_DIR="${FAKEROOT_DIR}" KDKROOT="${KDKROOT}" TIGHTBEAMC=${TIGHTBEAMC} RC_DARWIN_KERNEL_VERSION=${RC_DARWIN_KERNEL_VERSION}
             cd "${WORK_DIR}"
         fi
     else

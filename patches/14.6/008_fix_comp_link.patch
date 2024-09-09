@@ -1,0 +1,37 @@
+diff --git a/makedefs/MakeInc.def b/makedefs/MakeInc.def
+index c66add18..0f940016 100644
+--- a/makedefs/MakeInc.def
++++ b/makedefs/MakeInc.def
+@@ -889,6 +889,10 @@ LDFILES_KERNEL_ONLY = $(TARGET)/all-kpi.exp $(TARGET)/all-alias.exp $(TARGET)/sy
+ #
+ LD_KERNEL_LIBS	   = -lcc_kext
+ LD_KERNEL_ARCHIVES = $(LDFLAGS_KERNEL_SDK) -lfirehose_kernel
++# Link opensource binary library
++ifneq ($(filter T6000 T6020 T8101 T8103 T8112 VMAPPLE T6000 T6020 T8101 T8103 T8112 VMAPPLE,$(CURRENT_MACHINE_CONFIG)),)
++	LDFLAGS_KERNEL_ONLY += -rdynamic -Wl,-force_load,$(KDKROOT)/System/Library/KernelSupport/lib$(CURRENT_MACHINE_CONFIG).os.$(CURRENT_KERNEL_CONFIG).a
++endif
+ 
+ 
+ #
+diff --git a/osfmk/mach/message.h b/osfmk/mach/message.h
+index bf822064..08a9717c 100644
+--- a/osfmk/mach/message.h
++++ b/osfmk/mach/message.h
+@@ -375,6 +375,7 @@ typedef unsigned int mach_msg_descriptor_type_t;
+ 
+ #define MACH_MSG_DESCRIPTOR_MAX MACH_MSG_GUARDED_PORT_DESCRIPTOR
+ 
++#if 0
+ #if XNU_KERNEL_PRIVATE && __has_feature(ptrauth_calls)
+ #define __ipc_desc_sign(d) \
+ 	__ptrauth(ptrauth_key_process_independent_data, \
+@@ -382,6 +383,9 @@ typedef unsigned int mach_msg_descriptor_type_t;
+ #else
+ #define __ipc_desc_sign(d)
+ #endif /* KERNEL */
++#else
++#define __ipc_desc_sign(d)
++#endif
+ 
+ #pragma pack(push, 4)
+ 
