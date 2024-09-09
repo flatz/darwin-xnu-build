@@ -714,42 +714,42 @@ main() {
             ;;
         esac
     done
-    echo "Installing dependencies" >> log.txt
+    echo "Installing dependencies"
     install_deps
-    echo "Choosing XNU release" >> log.txt
+    echo "Choosing XNU release"
     choose_xnu
-    echo "Getting XNU sources" >> log.txt
+    echo "Getting XNU sources"
     get_xnu
-    echo "Applying patches" >> log.txt
+    echo "Applying patches"
     patches
-    echo "Setting up virtual environment" >> log.txt
+    echo "Setting up virtual environment"
     venv
-    echo "Building bootstrap commands" >> log.txt
+    echo "Building bootstrap commands"
     build_bootstrap_cmds
-    echo "Building DTrace" >> log.txt
+    echo "Building DTrace"
     build_dtrace
-    echo "Building availablity versions" >> log.txt
+    echo "Building availablity versions"
     build_availabilityversions
-    echo "Making XNU headers" >> log.txt
+    echo "Making XNU headers"
     xnu_headers
-    echo "Making libsystem headers" >> log.txt
+    echo "Making libsystem headers"
     libsystem_headers
-    echo "Making libsyscalls headers" >> log.txt
+    echo "Making libsyscalls headers"
     libsyscall_headers
-    echo "Building libplatform" >> log.txt
+    echo "Building libplatform"
     build_libplatform
-    echo "Building libdispatch" >> log.txt
+    echo "Building libdispatch"
     build_libdispatch
-    echo "Building XNU" >> log.txt
+    echo "Building XNU"
     build_xnu
-    echo "Done" >> log.txt
+    echo "Done"
     echo "  🎉 XNU Build Done!"
     if [ "$BUILDKC" -ne "0" ]; then
-        echo "Installing IPSW" >> log.txt
+        echo "Installing IPSW"
         install_ipsw
-        echo "Building kernelcache" >> log.txt
+        echo "Building kernelcache"
         build_kc
-        echo "Done" >> log.txt
+        echo "Done"
     fi
 }
 
